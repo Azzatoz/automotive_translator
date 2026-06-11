@@ -524,9 +524,10 @@ def load_locale_roots(module_dir: Path, xml_name: str) -> dict[str, ET.Element |
 
 
 def library_path_for_track(tools_root: Path, track: Track) -> Path:
+    base = tools_root / "data" / "dictionaries"
     if track == "en":
-        return tools_root / "translation_library_ru_en.json"
-    return tools_root / "translation_library_ru_zh-rCN.json"
+        return base / "translation_library_ru_en.json"
+    return base / "translation_library_ru_zh-rCN.json"
 
 
 def resolve_array_item_zh(

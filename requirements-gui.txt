@@ -1,2 +1,0 @@
-# pip install -r requirements-gui.txt
-PyQt6>=6.4

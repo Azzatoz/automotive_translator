@@ -840,13 +840,13 @@ def main() -> int:
     ap.add_argument(
         "--output-en",
         type=Path,
-        default=tools_root / "translation_library_ru_en.json",
+        default=tools_root / "data" / "dictionaries" / "translation_library_ru_en.json",
         help="Выход: библиотека en → ru",
     )
     ap.add_argument(
         "--output-zh",
         type=Path,
-        default=tools_root / "translation_library_ru_zh-rCN.json",
+        default=tools_root / "data" / "dictionaries" / "translation_library_ru_zh-rCN.json",
         help="Выход: библиотека zh-rCN → ru",
     )
     ap.add_argument(
@@ -876,13 +876,13 @@ def main() -> int:
     ap.add_argument(
         "--pending-output-en",
         type=Path,
-        default=tools_root / "translation_library_ru_en_pending.json",
+        default=tools_root / "data" / "pending" / "translation_library_ru_en_pending.json",
         help="Очередь перевода en (missing_no_ru_key, пустой ru)",
     )
     ap.add_argument(
         "--pending-output-zh",
         type=Path,
-        default=tools_root / "translation_library_ru_zh-rCN_pending.json",
+        default=tools_root / "data" / "pending" / "translation_library_ru_zh-rCN_pending.json",
         help="Очередь перевода zh (missing_no_ru_key, пустой ru)",
     )
     ap.add_argument(

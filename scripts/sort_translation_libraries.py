@@ -23,7 +23,8 @@ import sys
 import time
 from pathlib import Path
 
-_LIB = Path(__file__).resolve().parent / "library"
+REPO_ROOT = Path(__file__).resolve().parent.parent
+_LIB = REPO_ROOT / "library"
 if str(_LIB) not in sys.path:
     sys.path.insert(0, str(_LIB))
 
@@ -55,18 +56,19 @@ def sort_library_file(path: Path, *, dry_run: bool = False) -> tuple[int, int, i
 
 
 def main() -> int:
-    tools_root = Path(__file__).resolve().parent
+    from paths import DICT_EN, DICT_ZH  # noqa: E402
+
     ap = argparse.ArgumentParser(description="Сортировка библиотек en/zh (заглушки в конце)")
     ap.add_argument(
         "--en",
         type=Path,
-        default=tools_root / "translation_library_ru_en.json",
+        default=DICT_EN,
         help="Путь к en-словарю",
     )
     ap.add_argument(
         "--zh",
         type=Path,
-        default=tools_root / "translation_library_ru_zh-rCN.json",
+        default=DICT_ZH,
         help="Путь к zh-словарю",
     )
     ap.add_argument("--en-only", action="store_true", help="Только en")

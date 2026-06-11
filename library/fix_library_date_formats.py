@@ -96,9 +96,10 @@ def fix_map(string_map: dict[str, str]) -> list[str]:
 
 
 def main() -> int:
+    dict_dir = TOOLS_ROOT / "data" / "dictionaries"
     jobs: list[tuple[Path, Track]] = [
-        (TOOLS_ROOT / "translation_library_ru_zh-rCN.json", "zh"),
-        (TOOLS_ROOT / "translation_library_ru_en.json", "en"),
+        (dict_dir / "translation_library_ru_zh-rCN.json", "zh"),
+        (dict_dir / "translation_library_ru_en.json", "en"),
     ]
     for path, track in jobs:
         string_map = load_track_map(path)

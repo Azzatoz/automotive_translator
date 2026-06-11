@@ -3,7 +3,7 @@
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 TOOLS_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-REQ="$TOOLS_ROOT/requirements-fill-values-ru.txt"
+REQ="$TOOLS_ROOT/requirements/fill-values-ru.txt"
 PY="${PYTHON:-python3}"
 
 if ! "$PY" -c "from deep_translator import GoogleTranslator" 2>/dev/null; then

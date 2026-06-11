@@ -30,8 +30,8 @@ from source_resolve import (  # noqa: E402
     is_placeholder_ru,
 )
 
-DEFAULT_EN = TOOLS_ROOT / "translation_library_ru_en.json"
-DEFAULT_ZH = TOOLS_ROOT / "translation_library_ru_zh-rCN.json"
+DEFAULT_EN = TOOLS_ROOT / "data" / "dictionaries" / "translation_library_ru_en.json"
+DEFAULT_ZH = TOOLS_ROOT / "data" / "dictionaries" / "translation_library_ru_zh-rCN.json"
 DEFAULT_REPORT = TOOLS_ROOT / "reports" / "translation_library_audit.json"
 
 _WIN_EN_RE = re.compile(r"\bWin\b|All\s+Win\b|Vent\s+Win\b", re.I)

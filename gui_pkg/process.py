@@ -29,6 +29,10 @@ class ProcessController(QObject):
     def is_running(self) -> bool:
         return self._running
 
+    @property
+    def current_label(self) -> str:
+        return self._current_label
+
     def enqueue(self, args: list[str], label: str) -> None:
         self._queue.append((args, label))
         if not self._running:
@@ -72,15 +76,16 @@ class ProcessController(QObject):
             self.line_received.emit(line, "stderr")
 
     def _on_finished(self, exit_code: int, _status: QProcess.ExitStatus) -> None:
-        self.finished.emit(exit_code)
-        if self._queue:
-            self._start_next()
-        else:
+        has_more = bool(self._queue)
+        if not has_more:
             self._running = False
-            if exit_code == 0:
-                self.status_changed.emit("Готово")
-            else:
-                self.status_changed.emit("Ошибка")
+        self.finished.emit(exit_code)
+        if has_more:
+            self._start_next()
+        elif exit_code == 0:
+            self.status_changed.emit("Готово")
+        else:
+            self.status_changed.emit("Ошибка")
 
     def kill(self) -> None:
         if self._process.state() != QProcess.ProcessState.NotRunning:

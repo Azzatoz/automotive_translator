@@ -1,0 +1,370 @@
+{
+  "schema_version": 1,
+  "resolutions": {
+    "\"分享已中断，成功 %1$d 个，失败 %2$d 个\n您可在手机系统相册内进行查看\"": {
+      "chosen": "Передача прервана: %1$d успешно, %2$d ошибок.\nФайлы в галерее телефона.",
+      "variants": {
+        "Передача прервана: %1$d успешно, %2$d ошибок.\nФайлы в галерее телефона.": [
+          "AndesDVR__com.mega.dvr_src"
+        ],
+        "\"Отправка прервана: успешно %1$d, ошибок %2$d.\\nФайлы можно посмотреть в галерее телефона\"": [
+          "AndesHive__com.mega.hive_src"
+        ]
+      }
+    },
+    "\"手机开启蓝牙靠近中控，发现汽车后输入连接码，进行首次验证。\n使用时请勿将手机连接至车机热点。\"": {
+      "chosen": "Включите Bluetooth на телефоне и поднесите к ГУ.\nПосле обнаружения авто введите код подключения.\nНе подключайте телефон к точке доступа ГУ.",
+      "variants": {
+        "Включите Bluetooth на телефоне и поднесите к ГУ.\nПосле обнаружения авто введите PIN-код.\nНе подключайте телефон к точке доступа ГУ.": [
+          "AndesMobileConnect__com.mega.mobileconnect_src"
+        ],
+        "Включите Bluetooth на телефоне и поднесите к ГУ.\nПосле обнаружения авто введите код подключения.\nНе подключайте телефон к точке доступа ГУ.": [
+          "AndesMobileConnect__com.mega.mobileconnect_src"
+        ]
+      }
+    },
+    "\"文件分享期间，中控屏要保持在传输界面以免\n中断，文件分享期间，手机无法上网。分享完\n成，断开连接，即恢复互联网\"": {
+      "chosen": "\"Не покидайте экран во время передачи.\nИнтернет на телефоне будет недоступен до завершения.\"",
+      "variants": {
+        "\"Не покидайте экран во время передачи.\nИнтернет на телефоне будет недоступен до завершения.\"": [
+          "AndesDVR__com.mega.dvr_src"
+        ],
+        "\"Во время отправки не покидайте этот экран — иначе передача прервётся. На телефоне интернет будет недоступен. После завершения отключитесь от Wi‑Fi — интернет восстановится\"": [
+          "AndesHive__com.mega.hive_src"
+        ]
+      }
+    },
+    "\"步骤1：打开手机Wi-Fi功能\n步骤2：使用⻓安深蓝App，扫描上方二维码\n步骤3：连接Wi-Fi，接收或下载文件\"": {
+      "chosen": "\"Шаг 1: включите Wi‑Fi на телефоне\\nШаг 2: отсканируйте QR-код в приложении Deepal\\nШаг 3: подключитесь к Wi‑Fi и примите файлы\"",
+      "variants": {
+        "Шаг 1: Включите Wi-Fi на телефоне\nШаг 2: Отсканируйте QR-код в приложении Deepal\nШаг 3: Подключитесь и получите файлы": [
+          "AndesDVR__com.mega.dvr_src"
+        ],
+        "\"Шаг 1: включите Wi‑Fi на телефоне\\nШаг 2: отсканируйте QR-код в приложении Deepal\\nШаг 3: подключитесь к Wi‑Fi и примите файлы\"": [
+          "AndesHive__com.mega.hive_src"
+        ]
+      }
+    },
+    "\"步骤1：打开手机Wi-Fi功能\n步骤2：搜索上述⻋机Wi-Fi账号，输入密码后连接\n步骤3：连接Wi-Fi，接收或下载文件\"": {
+      "chosen": "\"Шаг 1: включите Wi‑Fi на телефоне\\nШаг 2: найдите сеть автомобиля и введите пароль\\nШаг 3: подключитесь к Wi‑Fi и примите файлы\"",
+      "variants": {
+        "Шаг 1: Включите Wi-Fi на телефоне\nШаг 2: Найдите сеть и введите пароль\nШаг 3: Подключитесь и получите файлы": [
+          "AndesDVR__com.mega.dvr_src"
+        ],
+        "\"Шаг 1: включите Wi‑Fi на телефоне\\nШаг 2: найдите сеть автомобиля и введите пароль\\nШаг 3: подключитесь к Wi‑Fi и примите файлы\"": [
+          "AndesHive__com.mega.hive_src"
+        ]
+      }
+    },
+    "360环视": {
+      "chosen": "Панорама 360°",
+      "variants": {
+        "Панорама 360°": [
+          "AndesLauncher__com.android.launcher3_src"
+        ],
+        "360 Круговое зрение": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Enter 键": {
+      "chosen": "Ввод",
+      "variants": {
+        "Ввод": [
+          "AndesAbUpdate__com.abupdate.ota_src",
+          "AndesBtPhone__com.mega.btphone_src",
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesDVR__com.mega.dvr_src",
+          "AndesDocumentsUI__com.mega.documentsui_src",
+          "AndesHive__com.mega.hive_src",
+          "AndesLauncher__com.android.launcher3_src",
+          "AndesMedia__com.mega.media_src",
+          "AndesSceneMode__com.mega.scenemode_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "AndesUser__com.mega.user_src",
+          "AndesWiredProjection__com.mega.wired_src",
+          "CarSettingsIntelligence__com.android.settings.intelligence_src",
+          "CarSettings__com.android.car.settings_src",
+          "MegaEngineeringMode__com.mega.app.engineeringmode_src",
+          "PetalMapsAuto__com.huawei.maps.car.app_src",
+          "WtAppMarket__com.changan.appmarket_src"
+        ],
+        "Входить": [
+          "AndesMobileConnect__com.mega.mobileconnect_src"
+        ]
+      }
+    },
+    "QQ音乐": {
+      "chosen": "QQ музыка",
+      "variants": {
+        "QQ Music": [
+          "AndesMedia__com.mega.media_src"
+        ],
+        "QQ музыка": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "USB未连接": {
+      "chosen": "USB не подключён",
+      "variants": {
+        "USB не подключён": [
+          "AndesMedia__com.mega.media_src"
+        ],
+        "USB не подключен": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "U盘已拔出": {
+      "chosen": "USB извлечён",
+      "variants": {
+        "USB извлечён": [
+          "AndesDVR__com.mega.dvr_src"
+        ],
+        "USB отключён": [
+          "AndesDocumentsUI__com.mega.documentsui_src"
+        ]
+      }
+    },
+    "U盘未插入": {
+      "chosen": "USB не подключён",
+      "variants": {
+        "USB -диск не вставлен": [
+          "AndesCarSettings__com.mega.carsettings_src"
+        ],
+        "USB не подключён": [
+          "AndesMedia__com.mega.media_src"
+        ]
+      }
+    },
+    "Wi-Fi账号： %1$s": {
+      "chosen": "Wi‑Fi: %1$s",
+      "variants": {
+        "Wi-Fi: %1$s": [
+          "AndesDVR__com.mega.dvr_src"
+        ],
+        "Wi‑Fi: %1$s": [
+          "AndesHive__com.mega.hive_src"
+        ]
+      }
+    },
+    "Widget 推荐歌单": {
+      "chosen": "Рекомендации",
+      "variants": {
+        "Рекомендации": [
+          "AndesMedia__com.mega.media_src"
+        ],
+        "Рекомендуемый плейлист виджета": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Widget 正在初始化": {
+      "chosen": "Загрузка виджета…",
+      "variants": {
+        "Инициализация виджета": [
+          "AndesBtPhone__com.mega.btphone_src",
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesHive__com.mega.hive_src",
+          "AndesLauncher__com.android.launcher3_src",
+          "AndesMobileConnect__com.mega.mobileconnect_src",
+          "AndesSceneMode__com.mega.scenemode_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "AndesUser__com.mega.user_src",
+          "AndesWiredProjection__com.mega.wired_src"
+        ],
+        "Загрузка виджета": [
+          "AndesDVR__com.mega.dvr_src"
+        ],
+        "Загрузка виджета…": [
+          "AndesDocumentsUI__com.mega.documentsui_src"
+        ],
+        "Инициализация…": [
+          "AndesMedia__com.mega.media_src"
+        ]
+      }
+    },
+    "·点击重连按钮，进行重新连接": {
+      "chosen": "• Нажмите «Повторить подключение»",
+      "variants": {
+        "• Нажмите «Переподключить»": [
+          "AndesMobileConnect__com.mega.mobileconnect_src"
+        ],
+        "• Нажмите «Повторить подключение»": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "一般": {
+      "chosen": "Нормально",
+      "variants": {
+        "Достаточный": [
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Нормально": [
+          "AndesSceneMode__com.mega.scenemode_src"
+        ]
+      }
+    },
+    "上一首": {
+      "chosen": "Предыдущий",
+      "variants": {
+        "Предыдущий трек": [
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesMedia__com.mega.media_src",
+          "AndesSceneMode__com.mega.scenemode_src",
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Предыдущий": [
+          "AndesMedia__com.mega.media_src"
+        ],
+        "Пред. трек": [
+          "AndesMobileConnect__com.mega.mobileconnect_src"
+        ]
+      }
+    },
+    "上午": {
+      "chosen": "Утро",
+      "variants": {
+        "утро": [
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesDVR__com.mega.dvr_src",
+          "AndesDocumentsUI__com.mega.documentsui_src",
+          "AndesHive__com.mega.hive_src",
+          "AndesLauncher__com.android.launcher3_src",
+          "AndesMedia__com.mega.media_src",
+          "AndesMobileConnect__com.mega.mobileconnect_src",
+          "AndesSceneMode__com.mega.scenemode_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src",
+          "MegaEngineeringMode__com.mega.app.engineeringmode_src",
+          "PetalMapsAuto__com.huawei.maps.car.app_src"
+        ],
+        "Утро": [
+          "AndesSceneMode__com.mega.scenemode_src"
+        ],
+        "AM": [
+          "WtAppMarket__com.changan.appmarket_src"
+        ]
+      }
+    },
+    "下一首": {
+      "chosen": "Следующий",
+      "variants": {
+        "Следующий трек": [
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesMedia__com.mega.media_src",
+          "AndesSceneMode__com.mega.scenemode_src",
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Следующий": [
+          "AndesMedia__com.mega.media_src"
+        ],
+        "След. трек": [
+          "AndesMobileConnect__com.mega.mobileconnect_src"
+        ]
+      }
+    },
+    "下午": {
+      "chosen": "День",
+      "variants": {
+        "полдень": [
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesDVR__com.mega.dvr_src",
+          "AndesDocumentsUI__com.mega.documentsui_src",
+          "AndesHive__com.mega.hive_src",
+          "AndesLauncher__com.android.launcher3_src",
+          "AndesMedia__com.mega.media_src",
+          "AndesMobileConnect__com.mega.mobileconnect_src",
+          "AndesSceneMode__com.mega.scenemode_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src",
+          "MegaEngineeringMode__com.mega.app.engineeringmode_src",
+          "PetalMapsAuto__com.huawei.maps.car.app_src"
+        ],
+        "День": [
+          "AndesSceneMode__com.mega.scenemode_src"
+        ],
+        "PM": [
+          "WtAppMarket__com.changan.appmarket_src"
+        ]
+      }
+    },
+    "不再提醒": {
+      "chosen": "Больше не напоминать",
+      "variants": {
+        "Нет больше напоминаний": [
+          "AndesSceneMode__com.mega.scenemode_src",
+          "PetalMapsAuto__com.huawei.maps.car.app_src"
+        ],
+        "Больше не напоминать": [
+          "AndesDVR__com.mega.dvr_src"
+        ],
+        "Не напоминать": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "不同意": {
+      "chosen": "Не согласен",
+      "variants": {
+        "не согласен": [
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesLauncher__com.android.launcher3_src"
+        ],
+        "Не согласен": [
+          "AndesHive__com.mega.hive_src",
+          "AndesMedia__com.mega.media_src"
+        ]
+      }
+    },
+    "与%s分享": {
+      "chosen": "Поделиться с помощью %s",
+      "variants": {
+        "Поделиться с помощью %s": [
+          "AndesAbUpdate__com.abupdate.ota_src",
+          "AndesBtPhone__com.mega.btphone_src",
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesDVR__com.mega.dvr_src",
+          "AndesHive__com.mega.hive_src",
+          "AndesLauncher__com.android.launcher3_src",
+          "AndesMedia__com.mega.media_src",
+          "AndesMobileConnect__com.mega.mobileconnect_src",
+          "AndesSceneMode__com.mega.scenemode_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "AndesUser__com.mega.user_src",
+          "AndesWiredProjection__com.mega.wired_src",
+          "CarSettingsIntelligence__com.android.settings.intelligence_src",
+          "CarSettings__com.android.car.settings_src",
+          "MegaEngineeringMode__com.mega.app.engineeringmode_src",
+          "PetalMapsAuto__com.huawei.maps.car.app_src",
+          "WtAppMarket__com.changan.appmarket_src"
+        ],
+        "Поделиться через %s": [
+          "AndesDocumentsUI__com.mega.documentsui_src"
+        ]
+      }
+    },
+    "专属": {
+      "chosen": "Особый",
+      "variants": {
+        "Особый": [
+          "AndesLauncher__com.android.launcher3_src"
+        ],
+        "Эксклюзивный": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    }
+  },
+  "meta": {
+    "from_gui": true,
+    "track": "zh-CN"
+  }
+}

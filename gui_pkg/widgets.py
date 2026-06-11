@@ -3,19 +3,91 @@ from __future__ import annotations
 from typing import Any
 
 from PyQt6.QtCore import QEvent, QObject, Qt, pyqtSignal
-from PyQt6.QtGui import QFont, QMouseEvent, QTextCharFormat, QTextCursor
+from PyQt6.QtGui import QFont, QFontMetrics, QMouseEvent, QResizeEvent, QTextCharFormat, QTextCursor
 from PyQt6.QtWidgets import (
     QButtonGroup,
     QFrame,
     QHBoxLayout,
     QLabel,
     QPlainTextEdit,
+    QPushButton,
     QRadioButton,
+    QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
 
 from gui_pkg.theme import THEME, AppTheme, StatTone
+
+
+def _wrap_button_label(text: str, fm: QFontMetrics, max_width: int) -> str:
+    if "\n" in text or fm.horizontalAdvance(text) <= max_width:
+        return text
+    lines: list[str] = []
+    current = ""
+    for word in text.split():
+        trial = f"{current} {word}".strip()
+        if fm.horizontalAdvance(trial) <= max_width:
+            current = trial
+        else:
+            if current:
+                lines.append(current)
+            current = word
+    if current:
+        lines.append(current)
+    return "\n".join(lines) if lines else text
+
+
+class ActionButton(QPushButton):
+    """Кнопка с переносом текста и короткой подписью на узких ячейках."""
+
+    def __init__(
+        self,
+        full_text: str,
+        short_text: str | None = None,
+        *,
+        primary: bool = False,
+        parent: QWidget | None = None,
+    ) -> None:
+        super().__init__(full_text, parent)
+        self._full_text = full_text
+        self._short_text = short_text or full_text
+        self.setObjectName("primaryBtn" if primary else "actionBtn")
+        self.setToolTip(full_text)
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        self.setMinimumHeight(38)
+        self._cell_width = -1
+
+    @property
+    def full_text(self) -> str:
+        return self._full_text
+
+    def update_labels(self, full: str, short: str | None = None) -> None:
+        self._full_text = full
+        self._short_text = short or full
+        self.setToolTip(full)
+        saved_w = self._cell_width
+        self._cell_width = -1
+        if saved_w > 0:
+            self.fit_cell_width(saved_w)
+        else:
+            self.setText(full)
+
+    def fit_cell_width(self, width: int) -> None:
+        width = max(80, width)
+        if width == self._cell_width:
+            return
+        self._cell_width = width
+        use_short = width < 210
+        raw = self._short_text if use_short else self._full_text
+        fm = QFontMetrics(self.font())
+        pad_v, pad_h = 18, 16
+        wrap_w = max(48, width - pad_h)
+        text = _wrap_button_label(raw, fm, wrap_w)
+        self.setText(text)
+        line_count = text.count("\n") + 1
+        height = line_count * fm.height() + pad_v
+        self.setMinimumHeight(max(38, height))
 
 
 class LogView(QPlainTextEdit):
@@ -105,11 +177,28 @@ class ModuleListRow(QWidget):
         layout.setSpacing(8)
         self._name = QLabel(display)
         self._name.setStyleSheet(theme.module_name_style(selected))
+        self._name.setToolTip(display)
+        self._name.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         self._badge_label = QLabel(badge)
         self._badge_label.setStyleSheet(theme.badge_stylesheet(status))  # type: ignore[arg-type]
         self._badge_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self._name, stretch=1)
         layout.addWidget(self._badge_label)
+        self._refresh_name_elide()
+
+    def _refresh_name_elide(self) -> None:
+        available = self._name.width()
+        if available <= 0:
+            self._name.setText(self._display)
+            return
+        metrics = QFontMetrics(self._name.font())
+        self._name.setText(
+            metrics.elidedText(self._display, Qt.TextElideMode.ElideMiddle, available)
+        )
+
+    def resizeEvent(self, event: QResizeEvent) -> None:
+        super().resizeEvent(event)
+        self._refresh_name_elide()
 
     def update_row(
         self,
@@ -127,6 +216,8 @@ class ModuleListRow(QWidget):
         self._name.setStyleSheet(self._theme.module_name_style(selected))
         self._badge_label.setText(badge)
         self._badge_label.setStyleSheet(self._theme.badge_stylesheet(status))  # type: ignore[arg-type]
+        self._name.setToolTip(display)
+        self._refresh_name_elide()
 
     def apply_theme(self, theme: AppTheme) -> None:
         self._theme = theme

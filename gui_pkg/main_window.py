@@ -5,12 +5,14 @@ from pathlib import Path
 from typing import Any
 
 from PyQt6.QtCore import QSettings, QSize, Qt
+from PyQt6.QtGui import QResizeEvent, QShowEvent
 from PyQt6.QtWidgets import (
     QApplication,
     QButtonGroup,
     QCheckBox,
     QComboBox,
     QFileDialog,
+    QGridLayout,
     QGroupBox,
     QHBoxLayout,
     QLabel,
@@ -30,18 +32,44 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from gui_pkg.config import REPO_ROOT, ROOT_PRESETS, SETTINGS_APP, SETTINGS_ORG, TRACKS
+from gui_pkg.config import (
+    LAYOUT_DIR,
+    LIBRARY_DIR,
+    REPO_ROOT,
+    ROOT_PRESETS,
+    SCRIPTS_DIR,
+    SETTINGS_APP,
+    SETTINGS_ORG,
+    TRACKS,
+)
 from gui_pkg.process import ProcessController
 from gui_pkg.scanner import (
     ModuleInfo,
     badge_text,
+    count_conflicts_for_module,
     discover_modules,
     display_module_name,
+    load_conflicts_cache,
     modules_in_conflict,
+    prune_conflicts_file,
     scan_module,
 )
+from gui_pkg.responsive import (
+    BREAKPOINT_NARROW,
+    SIDEBAR_MODE_FULL,
+    SIDEBAR_MODE_HIDDEN,
+    SIDEBAR_MODE_OPEN,
+    SIDEBAR_OPEN_WIDTH,
+    next_sidebar_mode,
+    normalize_sidebar_mode,
+    relayout_action_grid,
+    relayout_grid,
+    sidebar_mode_button_icon,
+    sidebar_mode_tooltip,
+    title_bar_compact,
+)
 from gui_pkg.theme import ThemeManager
-from gui_pkg.widgets import ConflictEntryWidget, LogView, ModuleListRow, StatCard
+from gui_pkg.widgets import ActionButton, ConflictEntryWidget, LogView, ModuleListRow, StatCard
 from gui_pkg.workers import ModuleScanWorker
 
 
@@ -52,16 +80,34 @@ class MainWindow(QMainWindow):
         self._theme = theme_mgr.current
         theme_mgr.changed.connect(self._on_theme_changed)
         self.setWindowTitle("Automotive Translator")
-        self.setMinimumSize(1000, 650)
-        self.resize(1200, 750)
+        self.setMinimumSize(880, 620)
+        self.resize(1320, 800)
 
         self._settings = QSettings(SETTINGS_ORG, SETTINGS_APP)
+        self._sidebar_mode = normalize_sidebar_mode(
+            str(self._settings.value("sidebar_mode", SIDEBAR_MODE_OPEN))
+        )
+        self._splitter: QSplitter | None = None
+        self._sidebar: QWidget | None = None
+        self._content_panel: QWidget | None = None
+        self._btn_sidebar_mode: QPushButton | None = None
+        self._overview_content: QWidget | None = None
+        self._stats_grid: QGridLayout | None = None
+        self._stats_cards: list[StatCard] = []
+        self._quick_grid: QGridLayout | None = None
+        self._quick_buttons: list[ActionButton] = []
+        self._conflicts_toolbar_grid: QGridLayout | None = None
+        self._conflicts_toolbar_buttons: list[ActionButton] = []
+        self._btn_browse: QPushButton | None = None
+        self._btn_reload: QPushButton | None = None
         self._modules: dict[str, ModuleInfo] = {}
         self._module_rows: dict[str, tuple[QListWidgetItem, ModuleListRow]] = {}
         self._scan_worker: ModuleScanWorker | None = None
         self._stats_refresh_worker: ModuleScanWorker | None = None
         self._conflict_widgets: list[ConflictEntryWidget] = []
         self._pending_refresh_after_cmd = False
+        self._refresh_modules_after_cmd = True
+        self._conflict_apply_pending: dict[str, set[str]] = {}
         self._action_buttons: list[QPushButton] = []
 
         self._runner = ProcessController(self)
@@ -82,8 +128,9 @@ class MainWindow(QMainWindow):
         root_layout.setContentsMargins(10, 10, 10, 6)
         root_layout.setSpacing(8)
 
-        title_bar = QWidget()
-        title_bar.setObjectName("titleBar")
+        self._title_bar = QWidget()
+        self._title_bar.setObjectName("titleBar")
+        title_bar = self._title_bar
         title_layout = QHBoxLayout(title_bar)
         title_layout.setContentsMargins(14, 10, 14, 10)
         title_layout.setSpacing(12)
@@ -92,18 +139,23 @@ class MainWindow(QMainWindow):
         self._btn_theme.setToolTip(self._theme_mgr.toggle_button_tooltip())
         self._btn_theme.clicked.connect(self._toggle_theme)
         title_layout.addWidget(self._btn_theme)
+        self._btn_sidebar_mode = QPushButton(sidebar_mode_button_icon(self._sidebar_mode))
+        self._btn_sidebar_mode.setObjectName("sidebarModeBtn")
+        self._btn_sidebar_mode.setToolTip(sidebar_mode_tooltip(self._sidebar_mode))
+        self._btn_sidebar_mode.clicked.connect(self._cycle_sidebar_mode)
+        title_layout.addWidget(self._btn_sidebar_mode)
         self._app_title = QLabel("Automotive Translator")
         self._app_title.setStyleSheet(self._theme.title_label_style())
         self._path_label = QLabel("Папка не выбрана")
         self._path_label.setStyleSheet(self._theme.path_label_style())
         title_layout.addWidget(self._app_title)
         title_layout.addWidget(self._path_label, stretch=1)
-        btn_browse = QPushButton("Сменить папку")
-        btn_browse.clicked.connect(self._browse_root)
-        btn_reload = QPushButton("Обновить")
-        btn_reload.clicked.connect(self._reload_modules)
-        title_layout.addWidget(btn_browse)
-        title_layout.addWidget(btn_reload)
+        self._btn_browse = QPushButton("Сменить папку")
+        self._btn_browse.clicked.connect(self._browse_root)
+        self._btn_reload = QPushButton("Обновить")
+        self._btn_reload.clicked.connect(self._reload_modules)
+        title_layout.addWidget(self._btn_browse)
+        title_layout.addWidget(self._btn_reload)
         root_layout.addWidget(title_bar)
 
         path_row = QHBoxLayout()
@@ -116,9 +168,13 @@ class MainWindow(QMainWindow):
         path_row.addWidget(self._root_combo, stretch=1)
         root_layout.addLayout(path_row)
 
-        splitter = QSplitter(Qt.Orientation.Horizontal)
+        self._splitter = QSplitter(Qt.Orientation.Horizontal)
+        splitter = self._splitter
+        splitter.setChildrenCollapsible(False)
+        splitter.setHandleWidth(1)
 
         sidebar = QWidget()
+        self._sidebar = sidebar
         sidebar.setObjectName("sidebarPanel")
         sidebar_layout = QVBoxLayout(sidebar)
         sidebar_layout.setContentsMargins(0, 0, 0, 0)
@@ -140,6 +196,7 @@ class MainWindow(QMainWindow):
         splitter.addWidget(sidebar)
 
         content = QWidget()
+        self._content_panel = content
         content.setObjectName("contentPanel")
         content_layout = QVBoxLayout(content)
         content_layout.setContentsMargins(0, 0, 0, 0)
@@ -154,8 +211,8 @@ class MainWindow(QMainWindow):
         splitter.addWidget(content)
         splitter.setStretchFactor(0, 0)
         splitter.setStretchFactor(1, 1)
-        splitter.setSizes([280, 900])
         root_layout.addWidget(splitter, stretch=1)
+        self._apply_sidebar_mode()
 
         status = QStatusBar()
         self.setStatusBar(status)
@@ -180,20 +237,19 @@ class MainWindow(QMainWindow):
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(12)
 
-        cards = QHBoxLayout()
-        cards.setSpacing(10)
+        self._stats_grid = QGridLayout()
+        self._stats_grid.setSpacing(10)
         self._card_total = StatCard("Всего строк", theme=self._theme)
         self._card_translated = StatCard("Переведено", tone="success", theme=self._theme)
         self._card_placeholders = StatCard("Заглушек", tone="warning", theme=self._theme)
         self._card_conflicts = StatCard("Конфликтов", tone="danger", theme=self._theme)
-        for card in (
+        self._stats_cards = [
             self._card_total,
             self._card_translated,
             self._card_placeholders,
             self._card_conflicts,
-        ):
-            cards.addWidget(card)
-        layout.addLayout(cards)
+        ]
+        layout.addLayout(self._stats_grid)
 
         progress_row = QHBoxLayout()
         self._progress_label = QLabel("Прогресс")
@@ -216,28 +272,42 @@ class MainWindow(QMainWindow):
         quick_label.setObjectName("sectionLabel")
         layout.addWidget(quick_label)
         quick = QGroupBox()
-        quick_layout = QHBoxLayout(quick)
-        quick_layout.setSpacing(8)
-        actions = [
-            ("Дополнить словарь", self._quick_ensure_dictionary, True),
-            ("Собрать из APK", self._quick_collect, False),
-            ("Сортировать", self._quick_sort, False),
-            ("Проверка словаря", self._quick_audit, False),
-            ("Формат дат", self._quick_fix_dates, False),
-            ("Шаблон конфликтов", self._quick_init_conflicts, False),
-            ("Поиск хардкода", self._quick_layout_scan, False),
-            ("Хардкод → strings", self._quick_layout_inject, False),
+        self._quick_grid = QGridLayout(quick)
+        self._quick_grid.setSpacing(8)
+        actions: list[tuple[str, str, object, bool]] = [
+            ("Дополнить словарь", "Доп.\nсловарь", self._quick_ensure_dictionary, True),
+            ("Собрать из APK", "Collect\nAPK", self._quick_collect, False),
+            ("Сортировать", "Сортир.", self._quick_sort, False),
+            ("Проверка словаря", "Аудит", self._quick_audit, False),
+            ("Формат дат", "Даты", self._quick_fix_dates, False),
+            ("Шаблон конфликтов", "Шаблон\nконфл.", self._quick_init_conflicts, False),
+            ("Поиск хардкода", "Скан\nlayout", self._quick_layout_scan, False),
+            ("Хардкод → strings", "В\nstrings", self._quick_layout_inject, False),
         ]
-        for label, handler, primary in actions:
-            btn = QPushButton(label)
-            if primary:
-                btn.setObjectName("primaryBtn")
-            btn.clicked.connect(handler)
-            quick_layout.addWidget(btn)
+        self._quick_buttons = []
+        for full_label, short_label, handler, primary in actions:
+            btn = ActionButton(full_label, short_label, primary=primary)
+            btn.clicked.connect(handler)  # type: ignore[arg-type]
+            self._quick_buttons.append(btn)
             self._action_buttons.append(btn)
         layout.addWidget(quick)
         layout.addStretch()
+        self._overview_content = w
         scroll.setWidget(w)
+        relayout_grid(
+            self._stats_grid,
+            self._stats_cards,
+            container_width=1200,
+            wide_columns=4,
+            narrow_columns=2,
+            breakpoint=BREAKPOINT_NARROW,
+        )
+        relayout_action_grid(
+            self._quick_grid,
+            self._quick_buttons,
+            container_width=1200,
+            max_columns=4,
+        )
         return scroll
 
     def _build_actions_tab(self) -> QWidget:
@@ -246,70 +316,111 @@ class MainWindow(QMainWindow):
         w = QWidget()
         layout = QVBoxLayout(w)
         layout.setContentsMargins(16, 16, 16, 16)
-        layout.setSpacing(12)
+        layout.setSpacing(14)
 
-        mode_group = QGroupBox("Заполнение переводов в values-ru")
-        mode_layout = QVBoxLayout(mode_group)
-        self._mode_group = QButtonGroup(self)
-        self._rb_normal = QRadioButton("Сначала словарь, остальное — через Google")
-        self._rb_library_only = QRadioButton("Только из словаря (без Google)")
-        self._rb_ensure_dict = QRadioButton("Дополнить словарь заглушками")
-        self._rb_normal.setChecked(True)
-        for i, rb in enumerate((self._rb_normal, self._rb_library_only, self._rb_ensure_dict)):
-            self._mode_group.addButton(rb, i)
-            mode_layout.addWidget(rb)
-        layout.addWidget(mode_group)
+        intro = QLabel(
+            "<b>Две отдельные операции</b><br>"
+            "① <b>Перевод values-ru</b> — заполняет русские строки в XML модуля.<br>"
+            "② <b>Хардкод в layout</b> — находит текст в layout-файлах и выносит в strings.xml. "
+            "После шага ② обычно нужен шаг ① в режиме «Только из словаря»."
+        )
+        intro.setObjectName("hintLabel")
+        intro.setWordWrap(True)
+        intro.setTextFormat(Qt.TextFormat.RichText)
+        layout.addWidget(intro)
 
-        lang_group = QGroupBox("Язык оригинала в APK")
-        lang_layout = QHBoxLayout(lang_group)
+        scope_group = QGroupBox("Область — какие модули")
+        scope_layout = QVBoxLayout(scope_group)
+        self._scope_group = QButtonGroup(self)
+        self._rb_scope_all = QRadioButton("Все модули в папке проекта")
+        self._rb_scope_one = QRadioButton("Только выбранный модуль слева")
+        self._rb_scope_all.setChecked(True)
+        self._scope_group.addButton(self._rb_scope_all, 0)
+        self._scope_group.addButton(self._rb_scope_one, 1)
+        scope_layout.addWidget(self._rb_scope_all)
+        scope_layout.addWidget(self._rb_scope_one)
+        self._actions_scope_label = QLabel()
+        self._actions_scope_label.setObjectName("hintLabel")
+        self._actions_scope_label.setWordWrap(True)
+        scope_layout.addWidget(self._actions_scope_label)
+        self._scope_group.buttonClicked.connect(lambda: self._update_actions_scope_label())
+        layout.addWidget(scope_group)
+
+        fill_group = QGroupBox("① Перевод values-ru")
+        fill_layout = QVBoxLayout(fill_group)
+        fill_layout.setSpacing(10)
+
+        lang_row = QHBoxLayout()
+        lang_row.addWidget(QLabel("Язык оригинала в APK:"))
         self._lang_group = QButtonGroup(self)
         self._rb_zh = QRadioButton("Китайский")
         self._rb_en = QRadioButton("Английский")
         self._rb_zh.setChecked(True)
         self._lang_group.addButton(self._rb_zh, 0)
         self._lang_group.addButton(self._rb_en, 1)
-        lang_layout.addWidget(self._rb_zh)
-        lang_layout.addWidget(self._rb_en)
-        layout.addWidget(lang_group)
+        lang_row.addWidget(self._rb_zh)
+        lang_row.addWidget(self._rb_en)
+        lang_row.addStretch()
+        fill_layout.addLayout(lang_row)
 
-        opts_group = QGroupBox("Дополнительно")
-        opts_layout = QVBoxLayout(opts_group)
-        self._chk_no_overwrite = QCheckBox("Не перезаписывать уже переведённое")
-        self._chk_dry_run = QCheckBox("Только показать, без записи в файлы")
-        self._chk_strings_only = QCheckBox("Только strings.xml (без plurals и arrays)")
-        self._chk_all_modules = QCheckBox("Обработать все модули в папке")
-        self._chk_all_modules.setChecked(True)
-        self._chk_auto_collect = QCheckBox("После перевода обновить общий словарь")
+        mode_label = QLabel("Режим перевода")
+        mode_label.setObjectName("sectionLabel")
+        fill_layout.addWidget(mode_label)
+        self._mode_group = QButtonGroup(self)
+        self._rb_normal = QRadioButton("Словарь + Google для пропусков")
+        self._rb_library_only = QRadioButton("Только из словаря")
+        self._rb_ensure_dict = QRadioButton("Дополнить словарь (заглушки)")
+        self._rb_normal.setChecked(True)
+        for i, rb in enumerate((self._rb_normal, self._rb_library_only, self._rb_ensure_dict)):
+            self._mode_group.addButton(rb, i)
+            fill_layout.addWidget(rb)
+        self._fill_mode_hint = QLabel()
+        self._fill_mode_hint.setObjectName("hintLabel")
+        self._fill_mode_hint.setWordWrap(True)
+        fill_layout.addWidget(self._fill_mode_hint)
+        self._mode_group.buttonClicked.connect(self._on_fill_mode_changed)
+
+        self._chk_dry_run = QCheckBox("Пробный запуск — ничего не записывать")
+        self._chk_strings_only = QCheckBox("Только strings.xml")
+        self._chk_no_overwrite = QCheckBox("Не трогать уже переведённые строки")
+        self._chk_auto_collect = QCheckBox("После перевода — обновить общий словарь из APK")
         self._chk_auto_collect.setChecked(True)
         for chk in (
-            self._chk_no_overwrite,
             self._chk_dry_run,
             self._chk_strings_only,
-            self._chk_all_modules,
+            self._chk_no_overwrite,
             self._chk_auto_collect,
         ):
-            opts_layout.addWidget(chk)
-        layout.addWidget(opts_group)
+            fill_layout.addWidget(chk)
 
-        self._btn_run_fill = QPushButton("Начать перевод")
+        self._btn_run_fill = QPushButton("Начать перевод values-ru")
         self._btn_run_fill.setObjectName("primaryBtn")
         self._btn_run_fill.clicked.connect(self._run_fill)
-        layout.addWidget(self._btn_run_fill)
+        fill_layout.addWidget(self._btn_run_fill)
         self._action_buttons.append(self._btn_run_fill)
+        layout.addWidget(fill_group)
 
-        layout_group = QGroupBox("Текст прямо в layout-файлах")
+        layout_group = QGroupBox("② Хардкод в layout-файлах")
         layout_form = QVBoxLayout(layout_group)
+        layout_intro = QLabel(
+            "Ищет китайский/английский текст в res/layout. "
+            "Рекомендуемый путь: вынести в strings.xml → затем «Только из словаря» выше."
+        )
+        layout_intro.setObjectName("hintLabel")
+        layout_intro.setWordWrap(True)
+        layout_form.addWidget(layout_intro)
+
         self._layout_mode_group = QButtonGroup(self)
         self._rb_layout_report = QRadioButton("Найти и показать отчёт")
-        self._rb_layout_inject = QRadioButton("Вынести в strings.xml (рекомендуется)")
-        self._rb_layout_inplace = QRadioButton("Перевести прямо в layout")
+        self._rb_layout_inject = QRadioButton("Вынести в strings.xml")
+        self._rb_layout_inplace = QRadioButton("Перевести прямо в layout (быстро, не рекомендуется)")
         self._rb_layout_inject.setChecked(True)
         for i, rb in enumerate(
             (self._rb_layout_report, self._rb_layout_inject, self._rb_layout_inplace)
         ):
             self._layout_mode_group.addButton(rb, i)
             layout_form.addWidget(rb)
-        self._chk_layout_dry_run = QCheckBox("Только показать, без записи в файлы")
+        self._chk_layout_dry_run = QCheckBox("Пробный запуск — ничего не записывать")
         layout_form.addWidget(self._chk_layout_dry_run)
         prefix_row = QHBoxLayout()
         prefix_row.addWidget(QLabel("Префикс новых ключей:"))
@@ -318,21 +429,67 @@ class MainWindow(QMainWindow):
         prefix_row.addWidget(self._layout_key_prefix)
         prefix_row.addStretch()
         layout_form.addLayout(prefix_row)
-        scope_note = QLabel(
-            "Обрабатываются все модули в папке или только выбранный слева — "
-            "см. настройку «Обработать все модули в папке» выше."
-        )
-        scope_note.setObjectName("hintLabel")
-        scope_note.setWordWrap(True)
-        layout_form.addWidget(scope_note)
         self._btn_run_layout = QPushButton("Обработать layout")
         self._btn_run_layout.clicked.connect(self._run_layout)
         layout_form.addWidget(self._btn_run_layout)
         self._action_buttons.append(self._btn_run_layout)
         layout.addWidget(layout_group)
+
+        self._on_fill_mode_changed()
+        self._update_actions_scope_label()
         layout.addStretch()
         scroll.setWidget(w)
         return scroll
+
+    def _scope_is_all_modules(self) -> bool:
+        return self._rb_scope_all.isChecked()
+
+    def _update_actions_scope_label(self) -> None:
+        root = self._current_root()
+        info = self._current_module()
+        if self._scope_is_all_modules():
+            if root:
+                n = len(self._modules)
+                self._actions_scope_label.setText(
+                    f"Будут обработаны все модули в папке ({n} шт.): {root}"
+                )
+            else:
+                self._actions_scope_label.setText("Укажите папку проекта вверху окна.")
+            self._rb_scope_one.setEnabled(True)
+        else:
+            if info:
+                self._actions_scope_label.setText(
+                    f"Будет обработан модуль: {info.display}"
+                )
+            else:
+                self._actions_scope_label.setText(
+                    "Выберите модуль в списке слева или переключитесь на «Все модули»."
+                )
+            self._rb_scope_one.setEnabled(True)
+
+    def _on_fill_mode_changed(self) -> None:
+        mode_id = self._mode_group.checkedId()
+        hints = {
+            0: (
+                "Сначала подставляет перевод из словаря. Что не найдено — "
+                "переводит через Google (нужен интернет)."
+            ),
+            1: (
+                "Берёт только готовые переводы из словаря. "
+                "Неизвестные строки не трогает и Google не вызывает."
+            ),
+            2: (
+                "Добавляет в словарь пропущенные строки заглушкой и обновляет values-ru. "
+                "Google не вызывается. Обычно делают перед массовым переводом."
+            ),
+        }
+        self._fill_mode_hint.setText(hints.get(mode_id, ""))
+        is_ensure = mode_id == 2
+        is_library = mode_id == 1
+        self._chk_no_overwrite.setVisible(is_ensure)
+        self._chk_auto_collect.setVisible(not is_ensure)
+        if is_library:
+            self._chk_auto_collect.setChecked(True)
 
     def _build_conflicts_tab(self) -> QWidget:
         w = QWidget()
@@ -357,40 +514,60 @@ class MainWindow(QMainWindow):
         self._conflicts_summary.setObjectName("hintLabel")
         layout.addWidget(self._conflicts_summary)
 
-        toolbar = QHBoxLayout()
         self._chk_filter_module_conflicts = QCheckBox("Показывать только конфликты выбранного модуля")
         self._chk_filter_module_conflicts.setChecked(True)
         self._chk_filter_module_conflicts.stateChanged.connect(self._reload_conflicts_ui)
-        toolbar.addWidget(self._chk_filter_module_conflicts)
-        btn_reload = QPushButton("Обновить список")
-        btn_reload.clicked.connect(self._reload_conflicts_ui)
-        toolbar.addWidget(btn_reload)
-        btn_init = QPushButton("Подставить популярный вариант")
-        btn_init.setToolTip("Для каждого конфликта выбрать перевод, который встречается в большинстве модулей")
-        btn_init.clicked.connect(self._quick_init_conflicts)
-        toolbar.addWidget(btn_init)
-        btn_select_all = QPushButton("Выделить все")
-        btn_select_all.clicked.connect(self._highlight_all_conflicts)
-        toolbar.addWidget(btn_select_all)
-        btn_clear_sel = QPushButton("Снять выделение")
-        btn_clear_sel.clicked.connect(self._clear_conflict_highlights)
-        toolbar.addWidget(btn_clear_sel)
-        toolbar.addStretch()
-        btn_apply_marked = QPushButton("Сохранить выделенные")
-        btn_apply_marked.setToolTip("Записать в словарь только блоки с синей рамкой")
-        btn_apply_marked.setObjectName("primaryBtn")
-        btn_apply_marked.clicked.connect(lambda: self._apply_conflicts(only_highlighted=True))
-        self._btn_apply_marked_conflicts = btn_apply_marked
-        toolbar.addWidget(btn_apply_marked)
-        btn_apply = QPushButton("Сохранить все на экране")
-        btn_apply.setToolTip(
+        layout.addWidget(self._chk_filter_module_conflicts)
+
+        toolbar_box = QGroupBox()
+        self._conflicts_toolbar_grid = QGridLayout(toolbar_box)
+        self._conflicts_toolbar_grid.setSpacing(8)
+        conflict_actions: list[tuple[str, str, object, bool]] = [
+            ("Обновить список", "Обновить", self._reload_conflicts_ui, False),
+            (
+                "Подставить популярный вариант",
+                "Большинство",
+                self._quick_init_conflicts,
+                False,
+            ),
+            ("Выделить все", "Все", self._highlight_all_conflicts, False),
+            ("Снять выделение", "Снять", self._clear_conflict_highlights, False),
+            (
+                "Сохранить выделенные",
+                "Выделен.",
+                lambda: self._apply_conflicts(only_highlighted=True),
+                True,
+            ),
+            (
+                "Сохранить все на экране",
+                "Все на экране",
+                lambda: self._apply_conflicts(only_highlighted=False),
+                False,
+            ),
+        ]
+        self._conflicts_toolbar_buttons = []
+        for full_label, short_label, handler, primary in conflict_actions:
+            btn = ActionButton(full_label, short_label, primary=primary)
+            btn.clicked.connect(handler)  # type: ignore[arg-type]
+            self._conflicts_toolbar_buttons.append(btn)
+        btn_init = self._conflicts_toolbar_buttons[1]
+        btn_init.setToolTip(
+            "Для каждого конфликта выбрать перевод, который встречается в большинстве модулей"
+        )
+        self._btn_apply_marked_conflicts = self._conflicts_toolbar_buttons[4]
+        self._btn_apply_marked_conflicts.setToolTip("Записать в словарь только блоки с синей рамкой")
+        self._btn_apply_conflicts = self._conflicts_toolbar_buttons[5]
+        self._btn_apply_conflicts.setToolTip(
             "Записать в словарь все конфликты, которые сейчас видны в списке ниже "
             "(с выбранным вариантом перевода)"
         )
-        btn_apply.clicked.connect(lambda: self._apply_conflicts(only_highlighted=False))
-        self._btn_apply_conflicts = btn_apply
-        toolbar.addWidget(btn_apply)
-        layout.addLayout(toolbar)
+        layout.addWidget(toolbar_box)
+        relayout_action_grid(
+            self._conflicts_toolbar_grid,
+            self._conflicts_toolbar_buttons,
+            container_width=1200,
+            max_columns=3,
+        )
 
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -402,7 +579,7 @@ class MainWindow(QMainWindow):
         scroll.setWidget(self._conflicts_container)
         layout.addWidget(scroll)
 
-        self._action_buttons.extend([btn_init, btn_apply_marked, btn_apply])
+        self._action_buttons.extend(self._conflicts_toolbar_buttons[1:])
         return w
 
     def _build_log_tab(self) -> QWidget:
@@ -418,6 +595,100 @@ class MainWindow(QMainWindow):
         self._log_view = LogView(theme=self._theme)
         layout.addWidget(self._log_view)
         return w
+
+    def showEvent(self, event: QShowEvent) -> None:
+        super().showEvent(event)
+        self._apply_sidebar_mode()
+        self._apply_responsive_layout()
+
+    def resizeEvent(self, event: QResizeEvent) -> None:
+        super().resizeEvent(event)
+        self._apply_sidebar_mode()
+        self._apply_responsive_layout()
+
+    def _cycle_sidebar_mode(self) -> None:
+        self._sidebar_mode = next_sidebar_mode(self._sidebar_mode)
+        self._settings.setValue("sidebar_mode", self._sidebar_mode)
+        self._apply_sidebar_mode()
+        if self._btn_sidebar_mode:
+            self._btn_sidebar_mode.setText(sidebar_mode_button_icon(self._sidebar_mode))
+            self._btn_sidebar_mode.setToolTip(sidebar_mode_tooltip(self._sidebar_mode))
+
+    def _apply_sidebar_mode(self) -> None:
+        if not self._splitter or not self._sidebar or not self._content_panel:
+            return
+
+        mode = self._sidebar_mode
+        sidebar = self._sidebar
+        content = self._content_panel
+        splitter = self._splitter
+        total = max(splitter.width(), 1)
+        handle = splitter.handle(1)
+        open_width = min(SIDEBAR_OPEN_WIDTH, max(280, total - 320))
+
+        handle.setEnabled(False)
+        sidebar.setMinimumWidth(0)
+        sidebar.setMaximumWidth(16777215)
+        content.setMinimumWidth(0)
+
+        if mode == SIDEBAR_MODE_HIDDEN:
+            sidebar.setVisible(False)
+            content.setVisible(True)
+        elif mode == SIDEBAR_MODE_OPEN:
+            sidebar.setVisible(True)
+            content.setVisible(True)
+            sidebar.setMinimumWidth(open_width)
+            sidebar.setMaximumWidth(open_width)
+            content.setMinimumWidth(320)
+            splitter.setSizes([open_width, max(1, total - open_width)])
+        else:  # SIDEBAR_MODE_FULL
+            sidebar.setVisible(True)
+            content.setVisible(False)
+            sidebar.setMinimumWidth(280)
+
+    def _content_area_width(self) -> int:
+        if self._sidebar_mode == SIDEBAR_MODE_FULL:
+            return BREAKPOINT_NARROW
+        if self._tabs and self._tabs.width() > 0:
+            return self._tabs.width()
+        if self._overview_content and self._overview_content.width() > 0:
+            return self._overview_content.width()
+        if self._sidebar_mode == SIDEBAR_MODE_HIDDEN:
+            return max(self.width() - 40, 320)
+        return max(self.width() - SIDEBAR_OPEN_WIDTH, 320)
+
+    def _apply_responsive_layout(self) -> None:
+        content_w = self._content_area_width()
+        if self._stats_grid and self._stats_cards:
+            relayout_grid(
+                self._stats_grid,
+                self._stats_cards,
+                container_width=content_w,
+                wide_columns=4,
+                narrow_columns=2,
+                breakpoint=BREAKPOINT_NARROW,
+            )
+        if self._quick_grid and self._quick_buttons:
+            relayout_action_grid(
+                self._quick_grid,
+                self._quick_buttons,
+                container_width=content_w,
+                max_columns=4,
+            )
+        if self._conflicts_toolbar_grid and self._conflicts_toolbar_buttons:
+            relayout_action_grid(
+                self._conflicts_toolbar_grid,
+                self._conflicts_toolbar_buttons,
+                container_width=content_w,
+                max_columns=3,
+            )
+
+        compact = title_bar_compact(self.width())
+        self._path_label.setVisible(not compact)
+        if self._btn_browse:
+            self._btn_browse.setText("Папка" if compact else "Сменить папку")
+        if self._btn_reload:
+            self._btn_reload.setText("↻" if compact else "Обновить")
 
     def _toggle_theme(self) -> None:
         self._theme_mgr.toggle()
@@ -544,13 +815,14 @@ class MainWindow(QMainWindow):
             self._modules[mod.name] = info
             item = QListWidgetItem()
             item.setData(Qt.ItemDataRole.UserRole, mod.name)
-            item.setSizeHint(QSize(0, 40))
+            item.setSizeHint(QSize(0, 48))
             row = ModuleListRow(info.display, "…", "unprocessed", theme=self._theme)
             self._module_list.addItem(item)
             self._module_list.setItemWidget(item, row)
             self._module_rows[mod.name] = (item, row)
 
         self._update_path_label()
+        self._update_actions_scope_label()
 
         if self._scan_worker and self._scan_worker.isRunning():
             self._scan_worker.terminate()
@@ -633,6 +905,7 @@ class MainWindow(QMainWindow):
         info = self._modules.get(name)
         if info:
             self._update_overview(info)
+        self._update_actions_scope_label()
         if self._tabs.currentIndex() == 2:
             self._reload_conflicts_ui()
 
@@ -663,6 +936,10 @@ class MainWindow(QMainWindow):
         self._status_label.setText(f"Выполняется: {label}…")
 
     def _on_cmd_finished(self, exit_code: int) -> None:
+        finished_label = self._runner.current_label
+        if exit_code == 0:
+            self._on_apply_conflicts_step_finished(finished_label)
+
         if not self._runner.is_running:
             self._set_commands_enabled(True)
             self._cmd_progress.setVisible(False)
@@ -678,8 +955,59 @@ class MainWindow(QMainWindow):
 
         if self._pending_refresh_after_cmd and not self._runner.is_running:
             self._pending_refresh_after_cmd = False
-            self._refresh_current_module_stats()
-            self._reload_modules()
+            reload_modules = self._refresh_modules_after_cmd
+            self._refresh_modules_after_cmd = True
+            if reload_modules:
+                self._refresh_current_module_stats()
+                self._reload_modules()
+            else:
+                self._reload_conflicts_ui()
+                self._refresh_conflict_badges_from_cache()
+                self._status_label.setText("Готово")
+                if self._tabs.currentIndex() == 3:
+                    self._tabs.setCurrentIndex(2)
+
+    def _on_apply_conflicts_step_finished(self, label: str) -> None:
+        prefix = "apply conflicts ("
+        if not label.startswith(prefix) or not label.endswith(")"):
+            return
+        track = label[len(prefix) : -1]
+        sources = self._conflict_apply_pending.pop(track, None)
+        if not sources:
+            return
+        for track_name, conflicts_path, _, _ in TRACKS:
+            if track_name != track:
+                continue
+            removed = prune_conflicts_file(conflicts_path, sources)
+            if removed:
+                self._log_view.append_line(
+                    f"[gui] из отчёта убрано конфликтов ({track_name}): {removed}",
+                    "stdout",
+                )
+            break
+        self._reload_conflicts_ui()
+        self._refresh_conflict_badges_from_cache()
+
+    def _refresh_conflict_badges_from_cache(self) -> None:
+        cache = load_conflicts_cache()
+        for name, info in self._modules.items():
+            if not info.stats:
+                info.stats = {}
+            n = count_conflicts_for_module(name, cache)
+            info.stats["conflicts"] = n
+            if n > 0:
+                info.stats["status"] = "conflicts"
+            elif info.stats.get("status") == "conflicts":
+                if info.stats.get("placeholders", 0) > 0:
+                    info.stats["status"] = "placeholders"
+                elif info.stats.get("total", 0) > 0:
+                    info.stats["status"] = "ready"
+                else:
+                    info.stats["status"] = "unprocessed"
+            self._update_list_item(name)
+        current = self._current_module()
+        if current:
+            self._update_overview(current)
 
     def _on_status_text(self, text: str) -> None:
         self._status_label.setText(text)
@@ -688,6 +1016,7 @@ class MainWindow(QMainWindow):
         self._log_view.append_line(line, stream)
 
     def _abort_command(self) -> None:
+        self._conflict_apply_pending.clear()
         self._runner.kill()
 
     def _refresh_current_module_stats(self) -> None:
@@ -722,19 +1051,23 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "fill", "Укажите папку проекта.")
             return None
 
-        args = [str(REPO_ROOT / "fill_values_ru_from_library.py")]
+        args = [str(SCRIPTS_DIR / "fill_values_ru_from_library.py")]
         mode_id = self._mode_group.checkedId()
         if mode_id == 1:
             args.append("--library-only")
         elif mode_id == 2:
             args.append("--ensure-dictionary")
 
-        if self._chk_all_modules.isChecked():
+        if self._scope_is_all_modules():
             args.extend(["--root", str(root)])
         else:
             info = self._current_module()
             if not info:
-                QMessageBox.warning(self, "fill", "Выберите модуль или включите «Все модули».")
+                QMessageBox.warning(
+                    self,
+                    "Перевод",
+                    "Выберите модуль слева или включите «Все модули в папке проекта».",
+                )
                 return None
             args.extend(["-m", str(info.path)])
 
@@ -759,7 +1092,7 @@ class MainWindow(QMainWindow):
             root = self._current_root()
             if root:
                 collect_args = [
-                    str(REPO_ROOT / "library" / "collect_translation_library_ru.py"),
+                    str(LIBRARY_DIR / "collect_translation_library_ru.py"),
                     "--root",
                     str(root),
                     "--track",
@@ -782,7 +1115,7 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, "collect", "Укажите папку проекта.")
             return
         args = [
-            str(REPO_ROOT / "library" / "collect_translation_library_ru.py"),
+            str(LIBRARY_DIR / "collect_translation_library_ru.py"),
             "--root",
             str(root),
             "--track",
@@ -793,13 +1126,13 @@ class MainWindow(QMainWindow):
         self._tabs.setCurrentIndex(3)
 
     def _quick_sort(self) -> None:
-        args = [str(REPO_ROOT / "sort_translation_libraries.py")]
+        args = [str(SCRIPTS_DIR / "sort_translation_libraries.py")]
         self._runner.run_single(args, "sort")
         self._tabs.setCurrentIndex(3)
 
     def _quick_audit(self) -> None:
         args = [
-            str(REPO_ROOT / "library" / "audit_translation_library.py"),
+            str(LIBRARY_DIR / "audit_translation_library.py"),
             "--min-severity",
             "medium",
         ]
@@ -807,7 +1140,7 @@ class MainWindow(QMainWindow):
         self._tabs.setCurrentIndex(3)
 
     def _quick_fix_dates(self) -> None:
-        args = [str(REPO_ROOT / "library" / "fix_library_date_formats.py")]
+        args = [str(LIBRARY_DIR / "fix_library_date_formats.py")]
         self._runner.run_single(args, "fix date formats")
         self._tabs.setCurrentIndex(3)
 
@@ -821,21 +1154,21 @@ class MainWindow(QMainWindow):
             mode_id = self._layout_mode_group.checkedId()
             mode = ("report", "inject", "inplace")[max(0, mode_id)]
 
-        args = [str(REPO_ROOT / "layout" / "extract_layout_hardcode.py")]
+        args = [str(LAYOUT_DIR / "extract_layout_hardcode.py")]
         if mode == "inject":
             args.append("--inject-values")
         elif mode == "inplace":
             args.append("--translate-inplace")
 
-        if self._chk_all_modules.isChecked():
+        if self._scope_is_all_modules():
             args.extend(["--root", str(root)])
         else:
             info = self._current_module()
             if not info:
                 QMessageBox.warning(
                     self,
-                    "layout extract",
-                    "Выберите модуль или включите «Все модули».",
+                    "Layout",
+                    "Выберите модуль слева или включите «Все модули в папке проекта».",
                 )
                 return None
             args.extend(["-m", str(info.path)])
@@ -884,7 +1217,7 @@ class MainWindow(QMainWindow):
             if not conflicts_path.is_file():
                 continue
             args = [
-                str(REPO_ROOT / "library" / "apply_translation_conflict_resolutions_ru.py"),
+                str(LIBRARY_DIR / "apply_translation_conflict_resolutions_ru.py"),
                 "--init",
                 "--majority",
                 "--overwrite",
@@ -1007,8 +1340,8 @@ class MainWindow(QMainWindow):
         )
         if total == 0:
             self._conflicts_summary.setText("На экране нет конфликтов.")
-            self._btn_apply_conflicts.setText("Сохранить все на экране")
-            self._btn_apply_marked_conflicts.setText("Сохранить выделенные")
+            self._btn_apply_conflicts.update_labels("Сохранить все на экране", "Все на экране")
+            self._btn_apply_marked_conflicts.update_labels("Сохранить выделенные", "Выделен.")
             self._btn_apply_conflicts.setEnabled(False)
             self._btn_apply_marked_conflicts.setEnabled(False)
             return
@@ -1023,8 +1356,14 @@ class MainWindow(QMainWindow):
             f"Выделено: {highlighted}. "
             f"Готово к сохранению: {ready} (выделенных: {marked_ready})."
         )
-        self._btn_apply_marked_conflicts.setText(f"Сохранить выделенные ({marked_ready})")
-        self._btn_apply_conflicts.setText(f"Сохранить все на экране ({ready})")
+        self._btn_apply_marked_conflicts.update_labels(
+            f"Сохранить выделенные ({marked_ready})",
+            f"Выделен.\n({marked_ready})",
+        )
+        self._btn_apply_conflicts.update_labels(
+            f"Сохранить все на экране ({ready})",
+            f"Все\n({ready})",
+        )
 
     def _apply_conflicts(self, *, only_highlighted: bool) -> None:
         if self._runner.is_running:
@@ -1098,7 +1437,7 @@ class MainWindow(QMainWindow):
                 continue
             self._write_conflict_resolutions(resolutions_path, entries, track, merge=only_highlighted)
             args = [
-                str(REPO_ROOT / "library" / "apply_translation_conflict_resolutions_ru.py"),
+                str(LIBRARY_DIR / "apply_translation_conflict_resolutions_ru.py"),
                 "--apply",
                 "--conflicts",
                 str(conflicts_path),
@@ -1110,6 +1449,10 @@ class MainWindow(QMainWindow):
             cmds.append((args, f"apply conflicts ({track})"))
 
         self._pending_refresh_after_cmd = True
+        self._refresh_modules_after_cmd = False
+        self._conflict_apply_pending = {
+            track: set(entries.keys()) for track, entries in by_track.items() if entries
+        }
         for args, label in cmds:
             self._runner.enqueue(args, label)
         self._tabs.setCurrentIndex(3)

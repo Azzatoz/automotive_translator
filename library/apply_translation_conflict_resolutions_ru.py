@@ -199,11 +199,10 @@ def cmd_apply(
 
 
 def main() -> int:
-    library_dir = Path(__file__).resolve().parent
-    tools_root = library_dir.parent
+    tools_root = Path(__file__).resolve().parent.parent
     default_conflicts = tools_root / "reports" / "translation_library_ru_conflicts.json"
-    default_resolutions = library_dir / "translation_library_ru_resolutions.json"
-    default_library = tools_root / "translation_library_ru.json"
+    default_resolutions = tools_root / "data" / "resolutions" / "translation_library_ru_resolutions.json"
+    default_library = tools_root / "data" / "dictionaries" / "translation_library_ru.json"
 
     ap = argparse.ArgumentParser(description="Решения конфликтов → translation_library_ru.json")
     ap.add_argument("--conflicts", type=Path, default=default_conflicts)

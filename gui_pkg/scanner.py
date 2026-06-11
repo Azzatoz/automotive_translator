@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import sys
+import time
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -27,6 +28,34 @@ def discover_modules(root: Path) -> list[Path]:
         if child.is_dir() and (child / "res").is_dir():
             modules.append(child)
     return modules
+
+
+def prune_conflicts_file(conflicts_path: Path, sources: set[str]) -> int:
+    """Убрать решённые конфликты из отчёта reports/. Возвращает число удалённых."""
+    if not sources or not conflicts_path.is_file():
+        return 0
+    try:
+        data = json.loads(conflicts_path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return 0
+    conflicts = data.get("conflicts") or []
+    if not isinstance(conflicts, list):
+        return 0
+    keep = [c for c in conflicts if str(c.get("source") or "") not in sources]
+    removed = len(conflicts) - len(keep)
+    if removed <= 0:
+        return 0
+    data["conflicts"] = keep
+    meta = data.get("meta")
+    if isinstance(meta, dict):
+        meta["pruned_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        meta["conflict_count"] = len(keep)
+    conflicts_path.parent.mkdir(parents=True, exist_ok=True)
+    conflicts_path.write_text(
+        json.dumps(data, ensure_ascii=False, indent=2) + "\n",
+        encoding="utf-8",
+    )
+    return removed
 
 
 def load_conflicts_cache() -> dict[str, list[dict[str, Any]]]:

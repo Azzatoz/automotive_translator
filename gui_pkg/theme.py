@@ -175,10 +175,16 @@ QPushButton:hover {{
 QPushButton:pressed {{ background: {t.border}; }}
 QPushButton:disabled {{ color: {t.text_muted}; border-color: {t.border}; }}
 
-QPushButton#themeToggleBtn {{
+QPushButton#themeToggleBtn,
+QPushButton#sidebarModeBtn {{
     padding: 4px 8px;
     min-width: 32px;
     font-size: 15px;
+}}
+
+QPushButton#actionBtn {{
+    padding: 8px 10px;
+    text-align: center;
 }}
 
 QPushButton#primaryBtn {{

@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
-# fill_values_ru_from_library.py — библиотека, затем Google; отчёт в tools/reports/
+# fill_values_ru_from_library.py — библиотека, затем Google; отчёт в reports/
 set -euo pipefail
-TOOLS_DIR="$(cd "$(dirname "$0")" && pwd)"
-REQ="$TOOLS_DIR/requirements-fill-values-ru.txt"
+SCRIPTS_DIR="$(cd "$(dirname "$0")" && pwd)"
+REPO_ROOT="$(cd "$SCRIPTS_DIR/.." && pwd)"
+REQ="$REPO_ROOT/requirements/fill-values-ru.txt"
 PY="${PYTHON:-python3}"
-PROJECT_ROOT="$(cd "$TOOLS_DIR/.." && pwd)"
+PROJECT_ROOT="$(cd "$REPO_ROOT/.." && pwd)"
 
 # Предустановленные корни (если каталог существует)
 declare -a ROOT_PRESET_LABELS=()
@@ -22,7 +23,7 @@ _add_root_preset() {
 _add_root_preset "Текущий проект (On translate)" "$PROJECT_ROOT"
 _add_root_preset "Dorest translate/Translated" "$PROJECT_ROOT/../Translated"
 
-# Типичные пути прошивок (см. tools/README)
+# Типичные пути прошивок (см. README)
 for candidate in \
   "$PROJECT_ROOT/../../Rest 4.1.1/Translated" \
   "$PROJECT_ROOT/../../Dorest 3.2.0/dorest 320" \
@@ -105,4 +106,4 @@ if ! "$PY" -c "from deep_translator import GoogleTranslator" 2>/dev/null; then
 fi
 
 export PYTHONUNBUFFERED=1
-exec "$PY" "$TOOLS_DIR/fill_values_ru_from_library.py" "$@"
+exec "$PY" "$SCRIPTS_DIR/fill_values_ru_from_library.py" "$@"

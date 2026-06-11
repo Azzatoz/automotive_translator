@@ -49,10 +49,11 @@ def promote_pending(
 
 
 def _main_path(tools: Path, track: Track) -> Path:
+    base = tools / "data" / "dictionaries"
     return (
-        tools / "translation_library_ru_en.json"
+        base / "translation_library_ru_en.json"
         if track == "en"
-        else tools / "translation_library_ru_zh-rCN.json"
+        else base / "translation_library_ru_zh-rCN.json"
     )
 
 

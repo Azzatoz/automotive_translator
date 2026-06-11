@@ -668,7 +668,7 @@ def main() -> int:
         "--library-en",
         type=Path,
         default=None,
-        help="Путь к en-словарю (по умолчанию: translation_library_ru_en.json рядом со скриптом)",
+        help="Путь к en-словарю (по умолчанию: data/dictionaries/translation_library_ru_en.json)",
     )
     ap.add_argument(
         "--library-zh",
@@ -713,8 +713,9 @@ def main() -> int:
         print("[info] --dry-run: файлы не будут изменены")
 
     # Загрузка словарей
-    lib_en_path = args.library_en or (tools_root / "translation_library_ru_en.json")
-    lib_zh_path = args.library_zh or (tools_root / "translation_library_ru_zh-rCN.json")
+    dict_dir = tools_root / "data" / "dictionaries"
+    lib_en_path = args.library_en or (dict_dir / "translation_library_ru_en.json")
+    lib_zh_path = args.library_zh or (dict_dir / "translation_library_ru_zh-rCN.json")
 
     string_map_en: dict[str, str] = {}
     string_map_zh: dict[str, str] = {}
@@ -776,7 +777,7 @@ def main() -> int:
         )
         if stats.keys_new > 0 and not args.dry_run:
             print(
-                "\n[next] запустите fill_values_ru_from_library.py --library-only "
+                "\n[next] запустите scripts/fill_values_ru_from_library.py --library-only "
                 "чтобы заполнить values-ru для новых ключей"
             )
     elif mode == "inplace":

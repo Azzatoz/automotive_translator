@@ -16,8 +16,9 @@ PENDING_KIND = "pending_no_ru"
 
 
 def default_pending_path(tools_root: Path, track: Track) -> Path:
+    base = tools_root / "data" / "pending"
     name = "translation_library_ru_en_pending.json" if track == "en" else "translation_library_ru_zh-rCN_pending.json"
-    return tools_root / name
+    return base / name
 
 
 def order_string_map(string_map: dict[str, str]) -> dict[str, str]:

@@ -7,11 +7,11 @@
 В конце — отчёт со списком строк, переведённых через Google.
 
 Пример (один модуль):
-  python3 tools/fill_values_ru_from_library.py \\
+  python3 scripts/fill_values_ru_from_library.py \\
     -m "/path/to/AndesDLNA_src" --source-lang zh-CN
 
 Все модули в Translated:
-  python3 tools/fill_values_ru_from_library.py \\
+  python3 scripts/fill_values_ru_from_library.py \\
     --root "/path/to/Translated" --source-lang zh-CN --delay 0.2
 
 Только отчёт без записи XML:
@@ -30,9 +30,10 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Callable
 
-TOOLS_ROOT = Path(__file__).resolve().parent
-sys.path.insert(0, str(TOOLS_ROOT / "functions"))
-sys.path.insert(0, str(TOOLS_ROOT / "library"))
+REPO_ROOT = Path(__file__).resolve().parent.parent
+TOOLS_ROOT = REPO_ROOT
+sys.path.insert(0, str(REPO_ROOT / "functions"))
+sys.path.insert(0, str(REPO_ROOT / "library"))
 
 import fill_values_ru as fvr  # noqa: E402
 from library_persist import load_track_map, save_track_map  # noqa: E402
@@ -61,9 +62,10 @@ from source_resolve import (  # noqa: E402
 )
 
 TRANSLATABLE_XML = ("strings.xml", "plurals.xml", "arrays.xml")
-DEFAULT_LIBRARY_LEGACY = TOOLS_ROOT / "translation_library_ru.json"
-DEFAULT_LIBRARY_EN = TOOLS_ROOT / "translation_library_ru_en.json"
-DEFAULT_LIBRARY_ZH = TOOLS_ROOT / "translation_library_ru_zh-rCN.json"
+_DEFAULT_DICT = TOOLS_ROOT / "data" / "dictionaries"
+DEFAULT_LIBRARY_LEGACY = _DEFAULT_DICT / "translation_library_ru.json"
+DEFAULT_LIBRARY_EN = _DEFAULT_DICT / "translation_library_ru_en.json"
+DEFAULT_LIBRARY_ZH = _DEFAULT_DICT / "translation_library_ru_zh-rCN.json"
 DEFAULT_LIBRARY = DEFAULT_LIBRARY_ZH
 DEFAULT_ROOT = TOOLS_ROOT.parent / "Translated"
 _FQCN_RE = re.compile(r"^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)+$", re.I)
@@ -1208,7 +1210,7 @@ def fill_module(
         print(
             "Ошибка: нужен deep-translator для fallback.\n"
             "  pip install deep-translator\n"
-            "  или bash tools/run_fill_values_ru_from_library.sh (из корня tools)\n"
+            "  или bash scripts/run_fill_values_ru_from_library.sh (из корня репозитория)\n"
             "  или --library-only",
             file=sys.stderr,
         )

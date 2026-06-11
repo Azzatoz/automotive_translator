@@ -1,0 +1,2802 @@
+{
+  "schema_version": 1,
+  "resolutions": {
+    "\"You won't hear your next alarm %1$s\"": {
+      "chosen": "«Вы не услышите следующий будильник %1$s»",
+      "variants": {
+        "«Вы не услышите следующий будильник %1$s»": [
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Следующий будильник: %1$s. Звук отключен.": [
+          "CarSettings__com.android.car.settings_src"
+        ]
+      }
+    },
+    "*After the connection is established, the screen cannot be operated; the projection can be exited by disconnecting the cable": {
+      "chosen": "*При подключении экран недоступен. Отсоедините кабель для выхода",
+      "variants": {
+        "*При подключении экран недоступен. Отсоедините кабель для выхода": [
+          "AndesDLNA__com.mega.dlna_src"
+        ],
+        "Шаг 1: подключите выход док-станции для захвата к порту головного устройства и к питанию.\nШаг 2: подключите консоль (например, Switch) ко входу док-станции и включите её.": [
+          "AndesWiredProjection__com.mega.wired_src"
+        ]
+      }
+    },
+    "*Starting video projection will increase the traffic consumption of the head unit, please pay attention to the cost. Major video playback software supports: iQIYI, Bilibili, Mango TV, Korean Drama TV, Baidu Netdisk, etc.": {
+      "chosen": "*Трансляция видео расходует трафик ГУ — учитывайте тариф.\nПоддерживаются: iQIYI, Bilibili, Mango TV, Korean Drama TV, Baidu Netdisk и др.",
+      "variants": {
+        "*Трансляция видео расходует трафик ГУ — учитывайте тариф.\nПоддерживаются: iQIYI, Bilibili, Mango TV, Korean Drama TV, Baidu Netdisk и др.": [
+          "AndesDLNA__com.mega.dlna_src"
+        ],
+        "*Трансляция видео увеличивает расход трафика головного устройства — учитывайте тариф.\nОсновные видеосервисы: iQIYI, Bilibili, Mango TV, Korean Drama TV, Baidu Netdisk и др.": [
+          "AndesWiredProjection__com.mega.wired_src"
+        ]
+      }
+    },
+    "0.5x": {
+      "chosen": "0.5×",
+      "variants": {
+        "0,5": [
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesMedia__com.mega.media_src",
+          "AndesSceneMode__com.mega.scenemode_src"
+        ],
+        "0.5×": [
+          "AndesDocumentsUI__com.mega.documentsui_src"
+        ]
+      }
+    },
+    "0.75x": {
+      "chosen": "0.75×",
+      "variants": {
+        "0,75": [
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesMedia__com.mega.media_src",
+          "AndesSceneMode__com.mega.scenemode_src"
+        ],
+        "0.75×": [
+          "AndesDocumentsUI__com.mega.documentsui_src"
+        ]
+      }
+    },
+    "1.0x": {
+      "chosen": "1.0×",
+      "variants": {
+        "1.0×": [
+          "AndesDocumentsUI__com.mega.documentsui_src"
+        ],
+        "1,0x": [
+          "AndesMedia__com.mega.media_src"
+        ]
+      }
+    },
+    "1.25x": {
+      "chosen": "1.25×",
+      "variants": {
+        "1,25": [
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesMedia__com.mega.media_src",
+          "AndesSceneMode__com.mega.scenemode_src"
+        ],
+        "1.25×": [
+          "AndesDocumentsUI__com.mega.documentsui_src"
+        ]
+      }
+    },
+    "1.5x": {
+      "chosen": "1.5×",
+      "variants": {
+        "1,5": [
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesMedia__com.mega.media_src",
+          "AndesSceneMode__com.mega.scenemode_src"
+        ],
+        "1.5×": [
+          "AndesDocumentsUI__com.mega.documentsui_src"
+        ]
+      }
+    },
+    "2.0x": {
+      "chosen": "2,0×",
+      "variants": {
+        "2.0×": [
+          "AndesDocumentsUI__com.mega.documentsui_src"
+        ],
+        "2,0×": [
+          "AndesMedia__com.mega.media_src"
+        ]
+      }
+    },
+    "AR-HUD video playing": {
+      "chosen": "Воспроизведение AR-HUD",
+      "variants": {
+        "Видео AR-HUD": [
+          "AndesDLNA__com.mega.dlna_src"
+        ],
+        "Видео на AR-HUD": [
+          "AndesDVR__com.mega.dvr_src"
+        ],
+        "Воспроизведение AR-HUD": [
+          "AndesDocumentsUI__com.mega.documentsui_src"
+        ]
+      }
+    },
+    "Add a profile": {
+      "chosen": "Добавить профиль",
+      "variants": {
+        "Добавить пользователя": [
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Добавить профиль": [
+          "CarSettings__com.android.car.settings_src"
+        ]
+      }
+    },
+    "After enabled, Switch can be connected on any page for automatic projection": {
+      "chosen": "При подключении Switch — автотрансляция с любого экрана",
+      "variants": {
+        "При подключении Switch — автотрансляция с любого экрана": [
+          "AndesDLNA__com.mega.dlna_src"
+        ],
+        "Если выключено: после подключения устройства нужно вручную открыть экран проводной трансляции.": [
+          "AndesWiredProjection__com.mega.wired_src"
+        ]
+      }
+    },
+    "After you create a new profile, that person should customize it for themselves.": {
+      "chosen": "Когда вы создадите профиль, пользователю потребуется настроить его самостоятельно.",
+      "variants": {
+        "После того как вы создадите новый профиль, этот человек должен настроить его под себя": [
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Когда вы создадите профиль, пользователю потребуется настроить его самостоятельно.": [
+          "CarSettings__com.android.car.settings_src"
+        ]
+      }
+    },
+    "Agree": {
+      "chosen": "Согласен разрешить",
+      "variants": {
+        "соглашаться": [
+          "AndesCarSettings__com.mega.carsettings_src"
+        ],
+        "Согласен разрешить": [
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesLauncher__com.android.launcher3_src"
+        ]
+      }
+    },
+    "All": {
+      "chosen": "Все",
+      "variants": {
+        "Все": [
+          "AndesDocumentsUI__com.mega.documentsui_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Все звонки": [
+          "AndesBtPhone__com.mega.btphone_src"
+        ]
+      }
+    },
+    "Ambient light": {
+      "chosen": "Подсветка",
+      "variants": {
+        "Подсветка": [
+          "AndesSceneMode__com.mega.scenemode_src"
+        ],
+        "Совмещенная эмбиент-подсветка": [
+          "AndesSceneMode__com.mega.scenemode_src"
+        ]
+      }
+    },
+    "App": {
+      "chosen": "Приложение",
+      "variants": {
+        "Приложения и программы": [
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Приложение": [
+          "PetalMapsAuto__com.huawei.maps.car.app_src"
+        ]
+      }
+    },
+    "Applications": {
+      "chosen": "Приложения",
+      "variants": {
+        "Приложение": [
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Приложения": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Apps can be updated from any profile for use by all other profiles.": {
+      "chosen": "Любой пользователь может обновлять приложения для других профилей.",
+      "variants": {
+        "Приложения можно обновлять из любого профиля для использования всеми другими профилями": [
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Любой пользователь может обновлять приложения для других профилей.": [
+          "CarSettings__com.android.car.settings_src"
+        ]
+      }
+    },
+    "Audio": {
+      "chosen": "Аудио",
+      "variants": {
+        "Аудио": [
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesMedia__com.mega.media_src",
+          "AndesSceneMode__com.mega.scenemode_src",
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Звук": [
+          "AndesDVR__com.mega.dvr_src"
+        ]
+      }
+    },
+    "Authenticating…": {
+      "chosen": "Аутентификация…",
+      "variants": {
+        "Аутентификация…": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Проверка…": [
+          "AndesUser__com.mega.user_src"
+        ]
+      }
+    },
+    "Available": {
+      "chosen": "Доступно",
+      "variants": {
+        "Доступный": [
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Доступно": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Available via %1$s": {
+      "chosen": "Доступно через %1$s",
+      "variants": {
+        "Доступно через %1$s": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Доступно через приложение \\\"%1$s\\\"": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ]
+      }
+    },
+    "Bluetooth Connected,Bluetooth Music Not Playing": {
+      "chosen": "Bluetooth подключён, музыка не играет",
+      "variants": {
+        "Bluetooth подключён, музыка не играет": [
+          "AndesMedia__com.mega.media_src"
+        ],
+        "Bluetooth подключён, музыка играет": [
+          "AndesMedia__com.mega.media_src"
+        ]
+      }
+    },
+    "Bluetooth on&#8230;": {
+      "chosen": "Включение Bluetooth…",
+      "variants": {
+        "Включение Bluetooth": [
+          "AndesMobileConnect__com.mega.mobileconnect_src"
+        ],
+        "Включение Bluetooth…": [
+          "AndesMobileConnect__com.mega.mobileconnect_src"
+        ]
+      }
+    },
+    "Bluetooth phone": {
+      "chosen": "Телефон",
+      "variants": {
+        "Bluetooth Phone": [
+          "AndesCarSettings__com.mega.carsettings_src"
+        ],
+        "Телефон": [
+          "AndesLauncher__com.android.launcher3_src"
+        ]
+      }
+    },
+    "Bonfire": {
+      "chosen": "Звездное небо у костра",
+      "variants": {
+        "Звездное небо у костра": [
+          "AndesSceneMode__com.mega.scenemode_src"
+        ],
+        "У костра под звездным небом": [
+          "AndesSceneMode__com.mega.scenemode_src"
+        ]
+      }
+    },
+    "Cache": {
+      "chosen": "Кэш",
+      "variants": {
+        "Кеш": [
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Кэш": [
+          "MegaEngineeringMode__com.mega.app.engineeringmode_src"
+        ]
+      }
+    },
+    "Camera permission": {
+      "chosen": "Разрешения камеры",
+      "variants": {
+        "Разрешения камеры": [
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesLauncher__com.android.launcher3_src"
+        ],
+        "Камера": [
+          "AndesLauncher__com.android.launcher3_src"
+        ]
+      }
+    },
+    "Check password and try again": {
+      "chosen": "Похоже, вы указали неверный пароль. Повторите попытку.",
+      "variants": {
+        "Возможно, вы указали неверный пароль. Повторите попытку.": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Похоже, вы указали неверный пароль. Повторите попытку.": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ]
+      }
+    },
+    "Clear": {
+      "chosen": "Очистить",
+      "variants": {
+        "Очистить": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Прозрачный": [
+          "AndesCarSettings__com.mega.carsettings_src"
+        ]
+      }
+    },
+    "Clear all": {
+      "chosen": "Очистить все",
+      "variants": {
+        "Очистить": [
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Очистить все": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Clear query": {
+      "chosen": "Очистить",
+      "variants": {
+        "Удалить запрос": [
+          "AndesAbUpdate__com.abupdate.ota_src",
+          "AndesBtPhone__com.mega.btphone_src",
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesDVR__com.mega.dvr_src",
+          "AndesHive__com.mega.hive_src",
+          "AndesLauncher__com.android.launcher3_src",
+          "AndesMedia__com.mega.media_src",
+          "AndesMobileConnect__com.mega.mobileconnect_src",
+          "AndesSceneMode__com.mega.scenemode_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "AndesUser__com.mega.user_src",
+          "AndesWiredProjection__com.mega.wired_src",
+          "CarSettingsIntelligence__com.android.settings.intelligence_src",
+          "CarSettings__com.android.car.settings_src",
+          "MegaEngineeringMode__com.mega.app.engineeringmode_src",
+          "PetalMapsAuto__com.huawei.maps.car.app_src",
+          "WtAppMarket__com.changan.appmarket_src"
+        ],
+        "Очистить": [
+          "AndesDocumentsUI__com.mega.documentsui_src"
+        ]
+      }
+    },
+    "Close": {
+      "chosen": "ВЫКЛ",
+      "variants": {
+        "ВЫКЛ": [
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Закрыть": [
+          "AndesDVR__com.mega.dvr_src",
+          "CarSettingsIntelligence__com.android.settings.intelligence_src"
+        ],
+        "Подтвердите к закрытию": [
+          "AndesLauncher__com.android.launcher3_src"
+        ]
+      }
+    },
+    "Comfort": {
+      "chosen": "Комфорт",
+      "variants": {
+        "Комфорт": [
+          "AndesLauncher__com.android.launcher3_src"
+        ],
+        "Комфортный": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Confirm": {
+      "chosen": "ОК",
+      "variants": {
+        "Подтвердить": [
+          "AndesBtPhone__com.mega.btphone_src",
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesDVR__com.mega.dvr_src",
+          "AndesLauncher__com.android.launcher3_src",
+          "AndesSceneMode__com.mega.scenemode_src",
+          "AndesUser__com.mega.user_src",
+          "PetalMapsAuto__com.huawei.maps.car.app_src"
+        ],
+        "Да": [
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "ОК": [
+          "AndesCarSettings__com.mega.carsettings_src"
+        ],
+        "Подтвердить удаление": [
+          "AndesUser__com.mega.user_src"
+        ]
+      }
+    },
+    "Connect Switch to the entertainment screen interface through Type-C": {
+      "chosen": "Подключите Switch через USB‑C к развлекательному экрану",
+      "variants": {
+        "Подключите Switch через USB‑C к развлекательному экрану": [
+          "AndesDLNA__com.mega.dlna_src"
+        ],
+        "Подключите консоль Switch к порту развлекательного экрана кабелем USB‑C (Type‑C).": [
+          "AndesWiredProjection__com.mega.wired_src"
+        ]
+      }
+    },
+    "Connected via %1$s": {
+      "chosen": "Подключено через приложение \\\"%1$s\\\".",
+      "variants": {
+        "Подключено через приложение \\\"%1$s\\\"": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Подключено через приложение \\\"%1$s\\\".": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ]
+      }
+    },
+    "Connecting": {
+      "chosen": "Подключение",
+      "variants": {
+        "Соединение": [
+          "AndesLauncher__com.android.launcher3_src",
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Подключение": [
+          "AndesMobileConnect__com.mega.mobileconnect_src",
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Начать": [
+          "AndesMobileConnect__com.mega.mobileconnect_src"
+        ]
+      }
+    },
+    "Connecting…": {
+      "chosen": "Подключение...",
+      "variants": {
+        "Подключение...": [
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Подключение…": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ]
+      }
+    },
+    "Connection failed": {
+      "chosen": "Ошибка подключения",
+      "variants": {
+        "Соединение не успешно": [
+          "AndesCarSettings__com.mega.carsettings_src"
+        ],
+        "Ошибка подключения": [
+          "AndesMedia__com.mega.media_src"
+        ]
+      }
+    },
+    "Constant Cabin Comfort": {
+      "chosen": "Климат в салоне",
+      "variants": {
+        "Поддержание постоянной температуры салона": [
+          "AndesLauncher__com.android.launcher3_src"
+        ],
+        "Постоянная температурная кабина": [
+          "AndesLauncher__com.android.launcher3_src"
+        ],
+        "Климат в салоне": [
+          "AndesSceneMode__com.mega.scenemode_src"
+        ]
+      }
+    },
+    "Countdown": {
+      "chosen": "Обратный отсчёт",
+      "variants": {
+        "Отсчёт": [
+          "AndesMedia__com.mega.media_src"
+        ],
+        "Обратный отсчёт": [
+          "AndesSceneMode__com.mega.scenemode_src"
+        ]
+      }
+    },
+    "Customise": {
+      "chosen": "Настраивать",
+      "variants": {
+        "Настраивать": [
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Свой": [
+          "AndesLauncher__com.android.launcher3_src"
+        ]
+      }
+    },
+    "Disable": {
+      "chosen": "Отключить",
+      "variants": {
+        "ВЫКЛ": [
+          "AndesSceneMode__com.mega.scenemode_src"
+        ],
+        "Отключить": [
+          "CarSettings__com.android.car.settings_src"
+        ]
+      }
+    },
+    "Disabled": {
+      "chosen": "Отключено",
+      "variants": {
+        "Заблокировано": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Не включено": [
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Отключено": [
+          "MegaEngineeringMode__com.mega.app.engineeringmode_src"
+        ]
+      }
+    },
+    "Disconnect": {
+      "chosen": "Отключить",
+      "variants": {
+        "Отключить": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Отсоедините устройство": [
+          "AndesLauncher__com.android.launcher3_src"
+        ]
+      }
+    },
+    "Disconnected": {
+      "chosen": "Отключено",
+      "variants": {
+        "Не подключено": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Отключено": [
+          "AndesMedia__com.mega.media_src"
+        ]
+      }
+    },
+    "Disconnecting": {
+      "chosen": "Отключен",
+      "variants": {
+        "Отключен": [
+          "AndesLauncher__com.android.launcher3_src",
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Отключить": [
+          "AndesMobileConnect__com.mega.mobileconnect_src"
+        ]
+      }
+    },
+    "Disconnecting…": {
+      "chosen": "Отключение...",
+      "variants": {
+        "Отключение...": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Отключение…": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ]
+      }
+    },
+    "Dismiss": {
+      "chosen": "ВЫКЛ",
+      "variants": {
+        "ВЫКЛ": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Закрыть": [
+          "CarSettings__com.android.car.settings_src"
+        ]
+      }
+    },
+    "Distance": {
+      "chosen": "Расстояние",
+      "variants": {
+        "Пройдено": [
+          "AndesLauncher__com.android.launcher3_src"
+        ],
+        "Расстояние": [
+          "CarSettings__com.android.car.settings_src"
+        ]
+      }
+    },
+    "Do not authorise": {
+      "chosen": "не согласен",
+      "variants": {
+        "Не уполномочен": [
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesLauncher__com.android.launcher3_src"
+        ],
+        "не согласен": [
+          "AndesLauncher__com.android.launcher3_src"
+        ]
+      }
+    },
+    "Do not remind again": {
+      "chosen": "Не напоминать",
+      "variants": {
+        "Нет больше напоминаний": [
+          "AndesSceneMode__com.mega.scenemode_src"
+        ],
+        "Не напоминать": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Download completed": {
+      "chosen": "Загрузка завершена",
+      "variants": {
+        "Скачивание завершено": [
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesMedia__com.mega.media_src",
+          "AndesSceneMode__com.mega.scenemode_src"
+        ],
+        "Загрузка завершена": [
+          "AndesCarSettings__com.mega.carsettings_src"
+        ]
+      }
+    },
+    "ECO": {
+      "chosen": "Эконом",
+      "variants": {
+        "экономика": [
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Эконом": [
+          "AndesLauncher__com.android.launcher3_src"
+        ]
+      }
+    },
+    "Edit": {
+      "chosen": "Изменить",
+      "variants": {
+        "редактировать": [
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Изменить": [
+          "AndesDVR__com.mega.dvr_src",
+          "AndesDocumentsUI__com.mega.documentsui_src",
+          "AndesLauncher__com.android.launcher3_src",
+          "MegaEngineeringMode__com.mega.app.engineeringmode_src"
+        ]
+      }
+    },
+    "Enable": {
+      "chosen": "Включить",
+      "variants": {
+        "Включить": [
+          "AndesDVR__com.mega.dvr_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "ВКЛ": [
+          "AndesSceneMode__com.mega.scenemode_src"
+        ],
+        "Подтвердить на включение": [
+          "AndesLauncher__com.android.launcher3_src"
+        ]
+      }
+    },
+    "Enabled": {
+      "chosen": "Включено",
+      "variants": {
+        "Включено": [
+          "AndesSceneMode__com.mega.scenemode_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src",
+          "MegaEngineeringMode__com.mega.app.engineeringmode_src"
+        ],
+        "Включить": [
+          "AndesUser__com.mega.user_src"
+        ]
+      }
+    },
+    "End": {
+      "chosen": "Завершено",
+      "variants": {
+        "Завершено": [
+          "AndesBtPhone__com.mega.btphone_src"
+        ],
+        "Конец звонка": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Energy consumption": {
+      "chosen": "Энергопотребление",
+      "variants": {
+        "Информационный запрос вождения": [
+          "AndesCarSettings__com.mega.carsettings_src"
+        ],
+        "Энергопотребление": [
+          "CarSettings__com.android.car.settings_src"
+        ]
+      }
+    },
+    "Exit": {
+      "chosen": "Выйти",
+      "variants": {
+        "Выйти": [
+          "AndesBtPhone__com.mega.btphone_src",
+          "AndesSceneMode__com.mega.scenemode_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "AndesUser__com.mega.user_src",
+          "CarSettings__com.android.car.settings_src",
+          "PetalMapsAuto__com.huawei.maps.car.app_src"
+        ],
+        "Выход": [
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesMobileConnect__com.mega.mobileconnect_src"
+        ]
+      }
+    },
+    "Face login": {
+      "chosen": "Вход по лицу",
+      "variants": {
+        "Лицо, входящее в систему": [
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesLauncher__com.android.launcher3_src"
+        ],
+        "Вход по лицу": [
+          "AndesUser__com.mega.user_src"
+        ]
+      }
+    },
+    "Fail": {
+      "chosen": "Ошибка",
+      "variants": {
+        "Ошибка": [
+          "AndesBtPhone__com.mega.btphone_src"
+        ],
+        "Не пройден": [
+          "AndesCarSettings__com.mega.carsettings_src"
+        ]
+      }
+    },
+    "Failed to delete the file, please try again": {
+      "chosen": "Не удалось удалить. Попробуйте снова.",
+      "variants": {
+        "Не удалось удалить. Повторите": [
+          "AndesDVR__com.mega.dvr_src"
+        ],
+        "Не удалось удалить. Попробуйте снова.": [
+          "AndesDocumentsUI__com.mega.documentsui_src"
+        ]
+      }
+    },
+    "Failed to load, please check and reload": {
+      "chosen": "Не удалось загрузить. Проверьте сеть или обновите.",
+      "variants": {
+        "Ошибка загрузки. Проверьте сеть": [
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesDVR__com.mega.dvr_src",
+          "AndesLauncher__com.android.launcher3_src",
+          "AndesMedia__com.mega.media_src"
+        ],
+        "Отсутствие загрузки, пожалуйста, проверьте сетевое соединение или перезагрузку": [
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesSceneMode__com.mega.scenemode_src",
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Ошибка загрузки. Проверьте сеть или обновите": [
+          "AndesBtPhone__com.mega.btphone_src"
+        ],
+        "Ошибка загрузки. Проверьте сеть или обновите.": [
+          "AndesDocumentsUI__com.mega.documentsui_src"
+        ],
+        "Ошибка загрузки. Проверьте сеть или перезагрузите": [
+          "AndesHive__com.mega.hive_src"
+        ],
+        "Не удалось загрузить. Проверьте сеть или обновите страницу": [
+          "AndesUser__com.mega.user_src"
+        ],
+        "Не удалось загрузить. Проверьте сеть или обновите.": [
+          "AndesWiredProjection__com.mega.wired_src"
+        ]
+      }
+    },
+    "Fast": {
+      "chosen": "Умеренно быстрая",
+      "variants": {
+        "Умеренно быстрая": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Высший": [
+          "AndesCarSettings__com.mega.carsettings_src"
+        ]
+      }
+    },
+    "Feature not available while driving": {
+      "chosen": "Эта функция недоступна во время вождения.",
+      "variants": {
+        "Эта функция недоступна во время вождения.": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Недоступно при движении": [
+          "CarSettingsIntelligence__com.android.settings.intelligence_src"
+        ]
+      }
+    },
+    "Filter Date": {
+      "chosen": "По дате",
+      "variants": {
+        "Фильтр по дате": [
+          "AndesDVR__com.mega.dvr_src"
+        ],
+        "По дате": [
+          "AndesDocumentsUI__com.mega.documentsui_src"
+        ]
+      }
+    },
+    "Filter by risk level": {
+      "chosen": "По уровню риска",
+      "variants": {
+        "Фильтр по риску": [
+          "AndesDVR__com.mega.dvr_src"
+        ],
+        "По уровню риска": [
+          "AndesDocumentsUI__com.mega.documentsui_src"
+        ]
+      }
+    },
+    "Fold": {
+      "chosen": "Сложить",
+      "variants": {
+        "Зеркало заднего вида": [
+          "AndesCarSettings__com.mega.carsettings_src"
+        ],
+        "Сложить": [
+          "AndesSceneMode__com.mega.scenemode_src"
+        ]
+      }
+    },
+    "For your driving safety, please only use it when parking": {
+      "chosen": "В целях безопасности используйте при остановленном автомобиле.",
+      "variants": {
+        "Для безопасности — только на стоянке": [
+          "AndesDLNA__com.mega.dlna_src"
+        ],
+        "В целях безопасности используйте при остановленном автомобиле.": [
+          "AndesWiredProjection__com.mega.wired_src"
+        ]
+      }
+    },
+    "Hardware version": {
+      "chosen": "Версия аппаратного обеспечения",
+      "variants": {
+        "Версия аппаратного обеспечения": [
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Версия железа": [
+          "MegaEngineeringMode__com.mega.app.engineeringmode_src"
+        ]
+      }
+    },
+    "For the purpose of protecting user data privacy, the use of the following functions requires your authorisation. You can authorise relevant functions with one tap.": {
+      "chosen": "В ответ на национальные требования безопасности данных, с целью защиты конфиденциальности пользовательских данных при использовании следующих функций, Вам нужно использовать его после разрешения. При разрешении вы можете включить соответствующие функции с одним щелчком.",
+      "variants": {
+        "В соответствии с национальными требованиями безопасности данных, с целью защиты конфиденциальности пользовательских данных, вам необходимо разрешить его использовать после использования следующих функций. При разрешении вы можете включить соответствующие функции с одним щелчком.": [
+          "AndesCarSettings__com.mega.carsettings_src"
+        ],
+        "В ответ на национальные требования безопасности данных, с целью защиты конфиденциальности пользовательских данных при использовании следующих функций, Вам нужно использовать его после разрешения. При разрешении вы можете включить соответствующие функции с одним щелчком.": [
+          "AndesLauncher__com.android.launcher3_src"
+        ]
+      }
+    },
+    "Headset": {
+      "chosen": "Гарнитура",
+      "variants": {
+        "Гарнитура": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Наушники": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Hide": {
+      "chosen": "Скрыть",
+      "variants": {
+        "Скрыть": [
+          "AndesBtPhone__com.mega.btphone_src"
+        ],
+        "Скрывать": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Home": {
+      "chosen": "Дом",
+      "variants": {
+        "Дом": [
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Вернуться на рабочий стол | Вернитесь на рабочий стол": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Image": {
+      "chosen": "Изображение",
+      "variants": {
+        "Изображение": [
+          "AndesDLNA__com.mega.dlna_src"
+        ],
+        "Фото": [
+          "AndesDocumentsUI__com.mega.documentsui_src"
+        ]
+      }
+    },
+    "In-car Care": {
+      "chosen": "Наблюдение в салоне",
+      "variants": {
+        "Салон автомобиля: режим опеки": [
+          "AndesLauncher__com.android.launcher3_src"
+        ],
+        "Наблюдение в салоне": [
+          "AndesSceneMode__com.mega.scenemode_src"
+        ]
+      }
+    },
+    "Internet": {
+      "chosen": "Сеть",
+      "variants": {
+        "Сеть": [
+          "PetalMapsAuto__com.huawei.maps.car.app_src"
+        ],
+        "Интернет": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Keep at least one": {
+      "chosen": "Оставьте хотя бы один",
+      "variants": {
+        "Оставьте хотя бы один": [
+          "AndesLauncher__com.android.launcher3_src"
+        ],
+        "Сохранить хотя бы один": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Learn more": {
+      "chosen": "Подробнее…",
+      "variants": {
+        "Подробнее…": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Узнать больше": [
+          "AndesSceneMode__com.mega.scenemode_src"
+        ]
+      }
+    },
+    "Left": {
+      "chosen": "Слева",
+      "variants": {
+        "Слева": [
+          "AndesDVR__com.mega.dvr_src",
+          "AndesDocumentsUI__com.mega.documentsui_src"
+        ],
+        "Левый": [
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Л": [
+          "AndesLauncher__com.android.launcher3_src"
+        ]
+      }
+    },
+    "Left front": {
+      "chosen": "Слева спереди",
+      "variants": {
+        "Л. перед": [
+          "AndesDVR__com.mega.dvr_src"
+        ],
+        "Слева спереди": [
+          "AndesDocumentsUI__com.mega.documentsui_src"
+        ]
+      }
+    },
+    "Left rear": {
+      "chosen": "Слева сзади",
+      "variants": {
+        "Л. зад": [
+          "AndesDVR__com.mega.dvr_src"
+        ],
+        "Слева сзади": [
+          "AndesDocumentsUI__com.mega.documentsui_src"
+        ]
+      }
+    },
+    "Less time.": {
+      "chosen": "Меньше времени",
+      "variants": {
+        "Уменьшить продолжительность": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Меньше времени": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Lighting Show": {
+      "chosen": "Световое шоу",
+      "variants": {
+        "Светомузыка": [
+          "AndesSceneMode__com.mega.scenemode_src"
+        ],
+        "Световое шоу": [
+          "AndesSceneMode__com.mega.scenemode_src"
+        ]
+      }
+    },
+    "Load failed. Check network or reload": {
+      "chosen": "Ошибка загрузки. Проверьте сеть или обновите",
+      "variants": {
+        "Ошибка загрузки. Проверьте сеть": [
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesDVR__com.mega.dvr_src",
+          "AndesLauncher__com.android.launcher3_src"
+        ],
+        "Ошибка загрузки. Проверьте сеть или обновите": [
+          "AndesBtPhone__com.mega.btphone_src"
+        ]
+      }
+    },
+    "Loading": {
+      "chosen": "Загрузка…",
+      "variants": {
+        "Загрузка": [
+          "AndesDVR__com.mega.dvr_src",
+          "AndesDocumentsUI__com.mega.documentsui_src",
+          "AndesLauncher__com.android.launcher3_src",
+          "AndesMobileConnect__com.mega.mobileconnect_src",
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Загрузка…": [
+          "AndesBtPhone__com.mega.btphone_src",
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesHive__com.mega.hive_src",
+          "AndesMedia__com.mega.media_src",
+          "AndesUser__com.mega.user_src",
+          "AndesWiredProjection__com.mega.wired_src"
+        ],
+        "загрузка": [
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesSceneMode__com.mega.scenemode_src",
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Loading failed, please check your network connection or reload the page": {
+      "chosen": "Не удалось загрузить. Проверьте сеть или обновите страницу",
+      "variants": {
+        "Ошибка загрузки. Проверьте сеть или обновите.": [
+          "AndesDocumentsUI__com.mega.documentsui_src"
+        ],
+        "Отсутствие загрузки, пожалуйста, проверьте сетевое соединение или перезагрузку": [
+          "AndesSceneMode__com.mega.scenemode_src"
+        ],
+        "Не удалось загрузить. Проверьте сеть или обновите страницу": [
+          "AndesUser__com.mega.user_src"
+        ]
+      }
+    },
+    "Loading&#8230;": {
+      "chosen": "Загрузка…",
+      "variants": {
+        "Загрузка...": [
+          "AndesCarSettings__com.mega.carsettings_src"
+        ],
+        "Загрузка…": [
+          "AndesMedia__com.mega.media_src"
+        ]
+      }
+    },
+    "Media volume": {
+      "chosen": "Медиа",
+      "variants": {
+        "Громкость": [
+          "AndesLauncher__com.android.launcher3_src"
+        ],
+        "Медиа": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Medium": {
+      "chosen": "Средняя",
+      "variants": {
+        "Средняя": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Выше": [
+          "AndesCarSettings__com.mega.carsettings_src"
+        ]
+      }
+    },
+    "Microphone permission": {
+      "chosen": "Доступ к микрофону",
+      "variants": {
+        "Доступ к микрофону": [
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesLauncher__com.android.launcher3_src"
+        ],
+        "Микрофон": [
+          "AndesLauncher__com.android.launcher3_src"
+        ]
+      }
+    },
+    "Minimize": {
+      "chosen": "Свернуть",
+      "variants": {
+        "Минимизировать": [
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Свернуть": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Mobile data": {
+      "chosen": "Мобильные данные",
+      "variants": {
+        "Мобильный интернет": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Мобильные данные": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "More time.": {
+      "chosen": "Увеличить продолжительность",
+      "variants": {
+        "Увеличить продолжительность": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Больше времени": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Music": {
+      "chosen": "Музыка",
+      "variants": {
+        "Музыка": [
+          "AndesDocumentsUI__com.mega.documentsui_src",
+          "AndesLauncher__com.android.launcher3_src"
+        ],
+        "музыка": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Mute": {
+      "chosen": "Без звука",
+      "variants": {
+        "Немой": [
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Без звука": [
+          "AndesDVR__com.mega.dvr_src",
+          "AndesLauncher__com.android.launcher3_src"
+        ]
+      }
+    },
+    "Nap Mode": {
+      "chosen": "Отдых",
+      "variants": {
+        "Режим отдыха": [
+          "AndesLauncher__com.android.launcher3_src"
+        ],
+        "Отдых": [
+          "AndesSceneMode__com.mega.scenemode_src"
+        ]
+      }
+    },
+    "Navigate home": {
+      "chosen": "Перейти на главный экран",
+      "variants": {
+        "Перейти на главный экран": [
+          "AndesAbUpdate__com.abupdate.ota_src",
+          "AndesBtPhone__com.mega.btphone_src",
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesDVR__com.mega.dvr_src",
+          "AndesDocumentsUI__com.mega.documentsui_src",
+          "AndesHive__com.mega.hive_src",
+          "AndesLauncher__com.android.launcher3_src",
+          "AndesMedia__com.mega.media_src",
+          "AndesMobileConnect__com.mega.mobileconnect_src",
+          "AndesSceneMode__com.mega.scenemode_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "AndesUser__com.mega.user_src",
+          "AndesWiredProjection__com.mega.wired_src",
+          "CarSettingsIntelligence__com.android.settings.intelligence_src",
+          "CarSettings__com.android.car.settings_src",
+          "MegaEngineeringMode__com.mega.app.engineeringmode_src",
+          "PetalMapsAuto__com.huawei.maps.car.app_src",
+          "WtAppMarket__com.changan.appmarket_src"
+        ],
+        "Перемещаться домой": [
+          "AndesCarSettings__com.mega.carsettings_src"
+        ]
+      }
+    },
+    "Navigate up": {
+      "chosen": "Вверх",
+      "variants": {
+        "Перейти вверх": [
+          "AndesAbUpdate__com.abupdate.ota_src",
+          "AndesBtPhone__com.mega.btphone_src",
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesDVR__com.mega.dvr_src",
+          "AndesDocumentsUI__com.mega.documentsui_src",
+          "AndesHive__com.mega.hive_src",
+          "AndesLauncher__com.android.launcher3_src",
+          "AndesMedia__com.mega.media_src",
+          "AndesMobileConnect__com.mega.mobileconnect_src",
+          "AndesSceneMode__com.mega.scenemode_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "AndesUser__com.mega.user_src",
+          "AndesWiredProjection__com.mega.wired_src",
+          "CarSettingsIntelligence__com.android.settings.intelligence_src",
+          "CarSettings__com.android.car.settings_src",
+          "MegaEngineeringMode__com.mega.app.engineeringmode_src",
+          "PetalMapsAuto__com.huawei.maps.car.app_src",
+          "WtAppMarket__com.changan.appmarket_src"
+        ],
+        "Вверх": [
+          "AndesMedia__com.mega.media_src"
+        ]
+      }
+    },
+    "Navigation": {
+      "chosen": "Навигация",
+      "variants": {
+        "Навигация": [
+          "AndesLauncher__com.android.launcher3_src",
+          "MegaEngineeringMode__com.mega.app.engineeringmode_src"
+        ],
+        "навигация": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Network abnorm": {
+      "chosen": "Ошибка сети",
+      "variants": {
+        "Ошибка сети": [
+          "AndesBtPhone__com.mega.btphone_src",
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesDVR__com.mega.dvr_src",
+          "AndesDocumentsUI__com.mega.documentsui_src",
+          "AndesHive__com.mega.hive_src",
+          "AndesLauncher__com.android.launcher3_src",
+          "AndesSceneMode__com.mega.scenemode_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "AndesUser__com.mega.user_src",
+          "AndesWiredProjection__com.mega.wired_src"
+        ],
+        "Нет сети": [
+          "AndesMedia__com.mega.media_src"
+        ]
+      }
+    },
+    "Next": {
+      "chosen": "Далее",
+      "variants": {
+        "Далее": [
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "AndesUser__com.mega.user_src",
+          "CarSettings__com.android.car.settings_src",
+          "MegaEngineeringMode__com.mega.app.engineeringmode_src",
+          "PetalMapsAuto__com.huawei.maps.car.app_src"
+        ],
+        "Следующий трек": [
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesMedia__com.mega.media_src",
+          "AndesSceneMode__com.mega.scenemode_src"
+        ],
+        "Следующий": [
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Продолжить": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Night": {
+      "chosen": "Ночь",
+      "variants": {
+        "ночь": [
+          "AndesLauncher__com.android.launcher3_src"
+        ],
+        "Ночь": [
+          "AndesLauncher__com.android.launcher3_src"
+        ]
+      }
+    },
+    "No Data": {
+      "chosen": "Нет данных",
+      "variants": {
+        "Нет данных": [
+          "AndesDVR__com.mega.dvr_src"
+        ],
+        "Нет данных пока": [
+          "AndesUser__com.mega.user_src"
+        ]
+      }
+    },
+    "No Data Available": {
+      "chosen": "Нет данных",
+      "variants": {
+        "Нет данных": [
+          "AndesBtPhone__com.mega.btphone_src",
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesDVR__com.mega.dvr_src",
+          "AndesDocumentsUI__com.mega.documentsui_src",
+          "AndesHive__com.mega.hive_src",
+          "AndesLauncher__com.android.launcher3_src",
+          "AndesWiredProjection__com.mega.wired_src"
+        ],
+        "Нет данных пока": [
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesSceneMode__com.mega.scenemode_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "AndesUser__com.mega.user_src"
+        ],
+        "Пусто": [
+          "AndesMedia__com.mega.media_src"
+        ]
+      }
+    },
+    "No data": {
+      "chosen": "Нет данных",
+      "variants": {
+        "Нет данных": [
+          "AndesBtPhone__com.mega.btphone_src",
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesDVR__com.mega.dvr_src",
+          "AndesDocumentsUI__com.mega.documentsui_src",
+          "AndesLauncher__com.android.launcher3_src",
+          "AndesMobileConnect__com.mega.mobileconnect_src"
+        ],
+        "Нет данных пока": [
+          "AndesSceneMode__com.mega.scenemode_src"
+        ]
+      }
+    },
+    "No internet": {
+      "chosen": "Без доступа к Интернету",
+      "variants": {
+        "Без доступа к Интернету": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Нет Интернета": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "No location to add": {
+      "chosen": "Недостаточное местоположение, пожалуйста, удалите его сначала",
+      "variants": {
+        "Недостаточное местоположение, пожалуйста, удалите его сначала": [
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Нет места, чтобы добавить": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "No notifications": {
+      "chosen": "Нет уведомлений",
+      "variants": {
+        "Пока нет новостей": [
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Нет уведомлений": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "No recent apps": {
+      "chosen": "Нет недавних приложений.",
+      "variants": {
+        "Нет недавних приложений": [
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Нет недавних приложений.": [
+          "CarSettings__com.android.car.settings_src"
+        ]
+      }
+    },
+    "Normal": {
+      "chosen": "Обычная",
+      "variants": {
+        "Обычная": [
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesMedia__com.mega.media_src",
+          "AndesSceneMode__com.mega.scenemode_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Достаточный": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Not now": {
+      "chosen": "Позже",
+      "variants": {
+        "Позже": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Не обновлять": [
+          "AndesUser__com.mega.user_src"
+        ]
+      }
+    },
+    "Notifications": {
+      "chosen": "Уведомления",
+      "variants": {
+        "Уведомления": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Центр сообщений": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "OFF": {
+      "chosen": "ВЫКЛ",
+      "variants": {
+        "ВЫКЛ": [
+          "AndesAbUpdate__com.abupdate.ota_src",
+          "AndesBtPhone__com.mega.btphone_src",
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesDVR__com.mega.dvr_src",
+          "AndesDocumentsUI__com.mega.documentsui_src",
+          "AndesHive__com.mega.hive_src",
+          "AndesLauncher__com.android.launcher3_src",
+          "AndesMedia__com.mega.media_src",
+          "AndesMobileConnect__com.mega.mobileconnect_src",
+          "AndesSceneMode__com.mega.scenemode_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "AndesUser__com.mega.user_src",
+          "AndesWiredProjection__com.mega.wired_src",
+          "CarSettingsIntelligence__com.android.settings.intelligence_src",
+          "CarSettings__com.android.car.settings_src",
+          "MegaEngineeringMode__com.mega.app.engineeringmode_src",
+          "PetalMapsAuto__com.huawei.maps.car.app_src",
+          "WtAppMarket__com.changan.appmarket_src"
+        ],
+        "Отключено": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ]
+      }
+    },
+    "OK": {
+      "chosen": "ОК",
+      "variants": {
+        "ОК": [
+          "AndesAbUpdate__com.abupdate.ota_src",
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesDVR__com.mega.dvr_src",
+          "AndesMedia__com.mega.media_src",
+          "AndesMobileConnect__com.mega.mobileconnect_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "AndesUser__com.mega.user_src",
+          "CarSettingsIntelligence__com.android.settings.intelligence_src",
+          "CarSettings__com.android.car.settings_src",
+          "MegaEngineeringMode__com.mega.app.engineeringmode_src",
+          "PetalMapsAuto__com.huawei.maps.car.app_src"
+        ],
+        "Понятно": [
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesDVR__com.mega.dvr_src",
+          "AndesSceneMode__com.mega.scenemode_src",
+          "AndesUser__com.mega.user_src",
+          "PetalMapsAuto__com.huawei.maps.car.app_src"
+        ],
+        "Хороший": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Хорошо": [
+          "AndesUser__com.mega.user_src",
+          "PetalMapsAuto__com.huawei.maps.car.app_src"
+        ]
+      }
+    },
+    "OK(%1$ds)": {
+      "chosen": "OK (%1$d с)",
+      "variants": {
+        "Понятно (%1$d с)": [
+          "AndesDVR__com.mega.dvr_src"
+        ],
+        "OK (%1$d с)": [
+          "AndesDocumentsUI__com.mega.documentsui_src"
+        ]
+      }
+    },
+    "ON": {
+      "chosen": "ВКЛ",
+      "variants": {
+        "ВКЛ": [
+          "AndesAbUpdate__com.abupdate.ota_src",
+          "AndesBtPhone__com.mega.btphone_src",
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesDVR__com.mega.dvr_src",
+          "AndesDocumentsUI__com.mega.documentsui_src",
+          "AndesHive__com.mega.hive_src",
+          "AndesLauncher__com.android.launcher3_src",
+          "AndesMedia__com.mega.media_src",
+          "AndesMobileConnect__com.mega.mobileconnect_src",
+          "AndesSceneMode__com.mega.scenemode_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "AndesUser__com.mega.user_src",
+          "AndesWiredProjection__com.mega.wired_src",
+          "CarSettingsIntelligence__com.android.settings.intelligence_src",
+          "CarSettings__com.android.car.settings_src",
+          "MegaEngineeringMode__com.mega.app.engineeringmode_src",
+          "PetalMapsAuto__com.huawei.maps.car.app_src",
+          "WtAppMarket__com.changan.appmarket_src"
+        ],
+        "ВКЛ.": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ]
+      }
+    },
+    "Obtaining IP address…": {
+      "chosen": "Получение IP-адреса...",
+      "variants": {
+        "Получение IP-адреса...": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Получение IP-адреса…": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ]
+      }
+    },
+    "Off": {
+      "chosen": "Выкл",
+      "variants": {
+        "Отключено": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "ВЫКЛ": [
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesLauncher__com.android.launcher3_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettingsIntelligence__com.android.settings.intelligence_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Выкл": [
+          "AndesCarSettings__com.mega.carsettings_src",
+          "MegaEngineeringMode__com.mega.app.engineeringmode_src",
+          "PetalMapsAuto__com.huawei.maps.car.app_src"
+        ]
+      }
+    },
+    "On": {
+      "chosen": "ВКЛ",
+      "variants": {
+        "ВКЛ.": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "ВКЛ": [
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettingsIntelligence__com.android.settings.intelligence_src",
+          "CarSettings__com.android.car.settings_src"
+        ]
+      }
+    },
+    "Open Bluetooth on moblie phone near the central control, and enter the connection code to verify the connection after you find the connection pop-up window.": {
+      "chosen": "Включите Bluetooth на телефоне и поднесите к ГУ.\nПосле обнаружения авто введите PIN-код.\nНе подключайте телефон к точке доступа ГУ.",
+      "variants": {
+        "Включите Bluetooth на телефоне и поднесите к ГУ.\nПосле обнаружения авто введите PIN-код.\nНе подключайте телефон к точке доступа ГУ.": [
+          "AndesMobileConnect__com.mega.mobileconnect_src"
+        ],
+        "Включите Bluetooth на телефоне и поднесите к ГУ.\nПосле появления окна подключения введите PIN-код.": [
+          "AndesMobileConnect__com.mega.mobileconnect_src"
+        ]
+      }
+    },
+    "Open navigation drawer": {
+      "chosen": "Меню",
+      "variants": {
+        "Меню": [
+          "AndesMedia__com.mega.media_src"
+        ],
+        "Открыть панель навигации": [
+          "WtAppMarket__com.changan.appmarket_src"
+        ]
+      }
+    },
+    "Other": {
+      "chosen": "Другое",
+      "variants": {
+        "другой": [
+          "AndesSystemUI__com.android.systemui_src",
+          "PetalMapsAuto__com.huawei.maps.car.app_src"
+        ],
+        "Другое": [
+          "PetalMapsAuto__com.huawei.maps.car.app_src"
+        ]
+      }
+    },
+    "Overflow": {
+      "chosen": "Ещё",
+      "variants": {
+        "Дополнительное меню": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Меню": [
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Ещё": [
+          "CarSettingsIntelligence__com.android.settings.intelligence_src"
+        ]
+      }
+    },
+    "Pause": {
+      "chosen": "Пауза",
+      "variants": {
+        "Приостановить": [
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesMedia__com.mega.media_src",
+          "AndesSceneMode__com.mega.scenemode_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Пауза": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Play": {
+      "chosen": "Играть",
+      "variants": {
+        "Воспроизвести": [
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesMedia__com.mega.media_src",
+          "AndesSceneMode__com.mega.scenemode_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Играть": [
+          "AndesMedia__com.mega.media_src"
+        ]
+      }
+    },
+    "Play anyway": {
+      "chosen": "Всё равно смотреть",
+      "variants": {
+        "Всё равно смотреть": [
+          "AndesDLNA__com.mega.dlna_src"
+        ],
+        "Всё равно": [
+          "AndesDVR__com.mega.dvr_src"
+        ]
+      }
+    },
+    "Power Off": {
+      "chosen": "Выключить питание",
+      "variants": {
+        "Выключить с одним щелчком": [
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Выключить питание": [
+          "AndesCarSettings__com.mega.carsettings_src"
+        ]
+      }
+    },
+    "Press Back again to end projection": {
+      "chosen": "Нажмите «Назад» ещё раз, чтобы завершить трансляцию.",
+      "variants": {
+        "Нажмите «Назад» ещё раз для выхода": [
+          "AndesDLNA__com.mega.dlna_src"
+        ],
+        "Нажмите «Назад» ещё раз, чтобы завершить трансляцию.": [
+          "AndesWiredProjection__com.mega.wired_src"
+        ]
+      }
+    },
+    "Previous": {
+      "chosen": "Предыдущий",
+      "variants": {
+        "Предыдущий трек": [
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesMedia__com.mega.media_src",
+          "AndesSceneMode__com.mega.scenemode_src"
+        ],
+        "Предыдущий": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Privacy": {
+      "chosen": "Конфиденциальность",
+      "variants": {
+        "Конфиденциальность": [
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Приватность": [
+          "AndesSceneMode__com.mega.scenemode_src"
+        ]
+      }
+    },
+    "Private DNS server cannot be accessed": {
+      "chosen": "Доступа к частному DNS-серверу нет",
+      "variants": {
+        "Доступа к частному DNS-серверу нет.": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Доступа к частному DNS-серверу нет": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ]
+      }
+    },
+    "Project": {
+      "chosen": "Экран телефона",
+      "variants": {
+        "Экран телефона": [
+          "AndesDLNA__com.mega.dlna_src"
+        ],
+        "Проводная трансляция": [
+          "AndesWiredProjection__com.mega.wired_src"
+        ]
+      }
+    },
+    "Projecting from mobile phone": {
+      "chosen": "Трансляция с телефона",
+      "variants": {
+        "Трансляция с телефона": [
+          "AndesDLNA__com.mega.dlna_src"
+        ],
+        "Трансляция контента с телефона": [
+          "AndesWiredProjection__com.mega.wired_src"
+        ]
+      }
+    },
+    "Recording": {
+      "chosen": "Запись",
+      "variants": {
+        "Запись": [
+          "AndesDVR__com.mega.dvr_src"
+        ],
+        "Нормальная запись": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Reload": {
+      "chosen": "Обновить",
+      "variants": {
+        "Перезагрузить": [
+          "AndesBtPhone__com.mega.btphone_src",
+          "AndesSceneMode__com.mega.scenemode_src",
+          "AndesUser__com.mega.user_src"
+        ],
+        "Обновить": [
+          "AndesDVR__com.mega.dvr_src",
+          "AndesDocumentsUI__com.mega.documentsui_src",
+          "AndesLauncher__com.android.launcher3_src"
+        ],
+        "Повторить": [
+          "AndesDLNA__com.mega.dlna_src"
+        ]
+      }
+    },
+    "Reloading": {
+      "chosen": "Обновить",
+      "variants": {
+        "Перезагрузить": [
+          "AndesBtPhone__com.mega.btphone_src",
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesHive__com.mega.hive_src",
+          "AndesSceneMode__com.mega.scenemode_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "AndesUser__com.mega.user_src"
+        ],
+        "Обновить": [
+          "AndesDVR__com.mega.dvr_src",
+          "AndesDocumentsUI__com.mega.documentsui_src",
+          "AndesLauncher__com.android.launcher3_src",
+          "AndesMobileConnect__com.mega.mobileconnect_src",
+          "AndesWiredProjection__com.mega.wired_src"
+        ],
+        "Повторить": [
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesMedia__com.mega.media_src"
+        ]
+      }
+    },
+    "Reset": {
+      "chosen": "Сброс",
+      "variants": {
+        "Сбросить настройки": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Сброс": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Restart": {
+      "chosen": "Перезапуск",
+      "variants": {
+        "Перезапуск процесса": [
+          "AndesCarSettings__com.mega.carsettings_src"
+        ],
+        "Перезапуск": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Resume": {
+      "chosen": "Продолжайте играть",
+      "variants": {
+        "Продолжайте играть": [
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Резюме": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Retry": {
+      "chosen": "Повторить",
+      "variants": {
+        "Повторить попытку": [
+          "AndesUser__com.mega.user_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Повторить": [
+          "AndesMedia__com.mega.media_src"
+        ]
+      }
+    },
+    "Right": {
+      "chosen": "Справа",
+      "variants": {
+        "Справа": [
+          "AndesDVR__com.mega.dvr_src",
+          "AndesDocumentsUI__com.mega.documentsui_src"
+        ],
+        "Верно": [
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "П": [
+          "AndesLauncher__com.android.launcher3_src"
+        ]
+      }
+    },
+    "Right front": {
+      "chosen": "Справа спереди",
+      "variants": {
+        "П. перед": [
+          "AndesDVR__com.mega.dvr_src"
+        ],
+        "Справа спереди": [
+          "AndesDocumentsUI__com.mega.documentsui_src"
+        ]
+      }
+    },
+    "Right rear": {
+      "chosen": "Справа сзади",
+      "variants": {
+        "П. зад": [
+          "AndesDVR__com.mega.dvr_src"
+        ],
+        "Справа сзади": [
+          "AndesDocumentsUI__com.mega.documentsui_src"
+        ]
+      }
+    },
+    "Ring": {
+      "chosen": "Рингтон",
+      "variants": {
+        "Рингтон": [
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Кольцо": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Scanning…": {
+      "chosen": "Поиск...",
+      "variants": {
+        "Поиск...": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Поиск…": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ]
+      }
+    },
+    "Scrolling limited while driving": {
+      "chosen": "Прокрутка ограничена при движении",
+      "variants": {
+        "Функция прокручивания ограничена во время вождения.": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Прокрутка ограничена при движении": [
+          "CarSettingsIntelligence__com.android.settings.intelligence_src"
+        ]
+      }
+    },
+    "Search…": {
+      "chosen": "Поиск…",
+      "variants": {
+        "Введите запрос": [
+          "AndesAbUpdate__com.abupdate.ota_src",
+          "AndesBtPhone__com.mega.btphone_src",
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesDVR__com.mega.dvr_src",
+          "AndesHive__com.mega.hive_src",
+          "AndesLauncher__com.android.launcher3_src",
+          "AndesMedia__com.mega.media_src",
+          "AndesMobileConnect__com.mega.mobileconnect_src",
+          "AndesSceneMode__com.mega.scenemode_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "AndesUser__com.mega.user_src",
+          "AndesWiredProjection__com.mega.wired_src",
+          "CarSettingsIntelligence__com.android.settings.intelligence_src",
+          "CarSettings__com.android.car.settings_src",
+          "MegaEngineeringMode__com.mega.app.engineeringmode_src",
+          "PetalMapsAuto__com.huawei.maps.car.app_src",
+          "WtAppMarket__com.changan.appmarket_src"
+        ],
+        "Поиск…": [
+          "AndesDocumentsUI__com.mega.documentsui_src"
+        ]
+      }
+    },
+    "Select": {
+      "chosen": "Выбрать",
+      "variants": {
+        "Выбрать": [
+          "AndesWiredProjection__com.mega.wired_src",
+          "MegaEngineeringMode__com.mega.app.engineeringmode_src"
+        ],
+        "Выбирать": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Select All": {
+      "chosen": "Выбрать всё",
+      "variants": {
+        "Выбрать все": [
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesDVR__com.mega.dvr_src"
+        ],
+        "Выбрать всё": [
+          "AndesDocumentsUI__com.mega.documentsui_src"
+        ]
+      }
+    },
+    "Selected": {
+      "chosen": "Выбрано",
+      "variants": {
+        "Выбрано": [
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesLauncher__com.android.launcher3_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Выбран": [
+          "AndesBtPhone__com.mega.btphone_src"
+        ]
+      }
+    },
+    "Sentry mode": {
+      "chosen": "Режим стража",
+      "variants": {
+        "Полный контроль": [
+          "AndesCarSettings__com.mega.carsettings_src",
+          "PetalMapsAuto__com.huawei.maps.car.app_src"
+        ],
+        "Режим стража": [
+          "AndesLauncher__com.android.launcher3_src"
+        ]
+      }
+    },
+    "Settings": {
+      "chosen": "Настройки",
+      "variants": {
+        "Сохранить": [
+          "AndesMedia__com.mega.media_src",
+          "AndesSceneMode__com.mega.scenemode_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Настройки": [
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesDVR__com.mega.dvr_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettingsIntelligence__com.android.settings.intelligence_src",
+          "PetalMapsAuto__com.huawei.maps.car.app_src"
+        ]
+      }
+    },
+    "Share with": {
+      "chosen": "Поделиться с помощью",
+      "variants": {
+        "Поделиться с помощью": [
+          "AndesAbUpdate__com.abupdate.ota_src",
+          "AndesBtPhone__com.mega.btphone_src",
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesDVR__com.mega.dvr_src",
+          "AndesHive__com.mega.hive_src",
+          "AndesLauncher__com.android.launcher3_src",
+          "AndesMedia__com.mega.media_src",
+          "AndesMobileConnect__com.mega.mobileconnect_src",
+          "AndesSceneMode__com.mega.scenemode_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "AndesUser__com.mega.user_src",
+          "AndesWiredProjection__com.mega.wired_src",
+          "CarSettingsIntelligence__com.android.settings.intelligence_src",
+          "CarSettings__com.android.car.settings_src",
+          "MegaEngineeringMode__com.mega.app.engineeringmode_src",
+          "PetalMapsAuto__com.huawei.maps.car.app_src",
+          "WtAppMarket__com.changan.appmarket_src"
+        ],
+        "Поделиться": [
+          "AndesDocumentsUI__com.mega.documentsui_src"
+        ]
+      }
+    },
+    "Share with %s": {
+      "chosen": "Поделиться с помощью %s",
+      "variants": {
+        "Поделиться с помощью %s": [
+          "AndesAbUpdate__com.abupdate.ota_src",
+          "AndesBtPhone__com.mega.btphone_src",
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesDVR__com.mega.dvr_src",
+          "AndesHive__com.mega.hive_src",
+          "AndesLauncher__com.android.launcher3_src",
+          "AndesMedia__com.mega.media_src",
+          "AndesMobileConnect__com.mega.mobileconnect_src",
+          "AndesSceneMode__com.mega.scenemode_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "AndesUser__com.mega.user_src",
+          "AndesWiredProjection__com.mega.wired_src",
+          "CarSettingsIntelligence__com.android.settings.intelligence_src",
+          "CarSettings__com.android.car.settings_src",
+          "MegaEngineeringMode__com.mega.app.engineeringmode_src",
+          "PetalMapsAuto__com.huawei.maps.car.app_src",
+          "WtAppMarket__com.changan.appmarket_src"
+        ],
+        "Поделиться через %s": [
+          "AndesDocumentsUI__com.mega.documentsui_src"
+        ]
+      }
+    },
+    "Silent": {
+      "chosen": "Без звука",
+      "variants": {
+        "Немой": [
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Без звука": [
+          "AndesBtPhone__com.mega.btphone_src"
+        ]
+      }
+    },
+    "Since last charging": {
+      "chosen": "С последней зарядки",
+      "variants": {
+        "С последней зарядки": [
+          "AndesLauncher__com.android.launcher3_src"
+        ],
+        "С последней заправки": [
+          "AndesLauncher__com.android.launcher3_src"
+        ]
+      }
+    },
+    "Slow": {
+      "chosen": "Медленная",
+      "variants": {
+        "Медленная": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Ниже": [
+          "AndesCarSettings__com.mega.carsettings_src"
+        ]
+      }
+    },
+    "Smart Recommendations": {
+      "chosen": "Рекомендации",
+      "variants": {
+        "Умные рекомендации": [
+          "AndesLauncher__com.android.launcher3_src"
+        ],
+        "Рекомендации": [
+          "AndesSceneMode__com.mega.scenemode_src"
+        ]
+      }
+    },
+    "Smart recommendations": {
+      "chosen": "Рекомендации",
+      "variants": {
+        "Рекомендации": [
+          "AndesLauncher__com.android.launcher3_src"
+        ],
+        "Сцена": [
+          "AndesLauncher__com.android.launcher3_src"
+        ]
+      }
+    },
+    "Sport": {
+      "chosen": "Спорт",
+      "variants": {
+        "спорт": [
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Спорт": [
+          "AndesLauncher__com.android.launcher3_src"
+        ]
+      }
+    },
+    "Standby": {
+      "chosen": "Режим ожидания",
+      "variants": {
+        "Режим ожидания": [
+          "AndesMobileConnect__com.mega.mobileconnect_src"
+        ],
+        "Поддерживать": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Start": {
+      "chosen": "Старт",
+      "variants": {
+        "Начинать": [
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Старт": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Step 1: Connect your mobile phone to the head unit hotspot": {
+      "chosen": "Включите Wi‑Fi на телефоне и подключитесь к точке доступа автомобиля.",
+      "variants": {
+        "Включите Wi‑Fi на телефоне и подключитесь к точке доступа авто": [
+          "AndesDLNA__com.mega.dlna_src"
+        ],
+        "Включите Wi‑Fi на телефоне и подключитесь к точке доступа автомобиля.": [
+          "AndesWiredProjection__com.mega.wired_src"
+        ]
+      }
+    },
+    "Step 2: Click the video playback window in App": {
+      "chosen": "В приложении для просмотра видео нажмите кнопку трансляции в окне воспроизведения.",
+      "variants": {
+        "В видеоприложении нажмите кнопку трансляции в плеере": [
+          "AndesDLNA__com.mega.dlna_src"
+        ],
+        "В приложении для просмотра видео нажмите кнопку трансляции в окне воспроизведения.": [
+          "AndesWiredProjection__com.mega.wired_src"
+        ]
+      }
+    },
+    "Step 3: Select the device %s in your mobile phone to project the video to the head unit": {
+      "chosen": "На телефоне выберите устройство «%s», чтобы транслировать экран на головное устройство.",
+      "variants": {
+        "На телефоне выберите «%s» для трансляции на авто": [
+          "AndesDLNA__com.mega.dlna_src"
+        ],
+        "На телефоне выберите устройство «%s», чтобы транслировать экран на головное устройство.": [
+          "AndesWiredProjection__com.mega.wired_src"
+        ]
+      }
+    },
+    "Stop": {
+      "chosen": "Стоп",
+      "variants": {
+        "Остановить": [
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesMedia__com.mega.media_src",
+          "AndesSceneMode__com.mega.scenemode_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Стоп": [
+          "AndesDVR__com.mega.dvr_src"
+        ]
+      }
+    },
+    "Stop casting": {
+      "chosen": "Остановить трансляцию",
+      "variants": {
+        "Остановить трансляцию": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Прекратить трансляцию": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Submit query": {
+      "chosen": "Отправить запрос",
+      "variants": {
+        "Отправить запрос": [
+          "AndesAbUpdate__com.abupdate.ota_src",
+          "AndesBtPhone__com.mega.btphone_src",
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesDVR__com.mega.dvr_src",
+          "AndesHive__com.mega.hive_src",
+          "AndesLauncher__com.android.launcher3_src",
+          "AndesMedia__com.mega.media_src",
+          "AndesMobileConnect__com.mega.mobileconnect_src",
+          "AndesSceneMode__com.mega.scenemode_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "AndesUser__com.mega.user_src",
+          "AndesWiredProjection__com.mega.wired_src",
+          "CarSettingsIntelligence__com.android.settings.intelligence_src",
+          "CarSettings__com.android.car.settings_src",
+          "MegaEngineeringMode__com.mega.app.engineeringmode_src",
+          "PetalMapsAuto__com.huawei.maps.car.app_src",
+          "WtAppMarket__com.changan.appmarket_src"
+        ],
+        "Отправить": [
+          "AndesDocumentsUI__com.mega.documentsui_src"
+        ]
+      }
+    },
+    "Sunshade": {
+      "chosen": "Шторка",
+      "variants": {
+        "Шторка": [
+          "AndesLauncher__com.android.launcher3_src"
+        ],
+        "Солятву": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Switch": {
+      "chosen": "Переключить",
+      "variants": {
+        "Переключить": [
+          "AndesBtPhone__com.mega.btphone_src",
+          "AndesLauncher__com.android.launcher3_src",
+          "AndesMobileConnect__com.mega.mobileconnect_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "MegaEngineeringMode__com.mega.app.engineeringmode_src",
+          "PetalMapsAuto__com.huawei.maps.car.app_src"
+        ],
+        "Сменить пользователя": [
+          "CarSettings__com.android.car.settings_src"
+        ]
+      }
+    },
+    "Switch auto projection": {
+      "chosen": "Автотрансляция после подключения",
+      "variants": {
+        "Автотрансляция Switch": [
+          "AndesDLNA__com.mega.dlna_src"
+        ],
+        "Автотрансляция после подключения": [
+          "AndesWiredProjection__com.mega.wired_src"
+        ]
+      }
+    },
+    "Switch projection": {
+      "chosen": "Проводная трансляция",
+      "variants": {
+        "Switch": [
+          "AndesDLNA__com.mega.dlna_src"
+        ],
+        "Проводная трансляция": [
+          "AndesWiredProjection__com.mega.wired_src"
+        ]
+      }
+    },
+    "Switch to %s": {
+      "chosen": "Переключить на %s",
+      "variants": {
+        "Переключить на %s": [
+          "AndesMobileConnect__com.mega.mobileconnect_src",
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Сменить пользователя на %s": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ]
+      }
+    },
+    "Sync": {
+      "chosen": "Синхронизация данных",
+      "variants": {
+        "Синхронизация данных": [
+          "AndesBtPhone__com.mega.btphone_src"
+        ],
+        "Синхр.": [
+          "AndesBtPhone__com.mega.btphone_src"
+        ]
+      }
+    },
+    "Tailgate": {
+      "chosen": "Багажник",
+      "variants": {
+        "Багажник": [
+          "AndesLauncher__com.android.launcher3_src"
+        ],
+        "Черный ход": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Tailored": {
+      "chosen": "Особый",
+      "variants": {
+        "Особый": [
+          "AndesLauncher__com.android.launcher3_src"
+        ],
+        "Эксклюзивный": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Text-to-speech output": {
+      "chosen": "Синтез речи",
+      "variants": {
+        "Синтез речи": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Озвучивание текста": [
+          "CarSettings__com.android.car.settings_src"
+        ]
+      }
+    },
+    "The speed is too high to open the panorama": {
+      "chosen": "На высокой скорости панорама недоступна",
+      "variants": {
+        "Слишком высокая скорость для панорамы": [
+          "AndesDVR__com.mega.dvr_src",
+          "AndesDocumentsUI__com.mega.documentsui_src",
+          "AndesHive__com.mega.hive_src",
+          "AndesMobileConnect__com.mega.mobileconnect_src",
+          "AndesUser__com.mega.user_src"
+        ],
+        "Скорость автомобиля слишком высока, а панорамный вид не может быть включен": [
+          "AndesBtPhone__com.mega.btphone_src",
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesSceneMode__com.mega.scenemode_src"
+        ],
+        "Скорость слишком высока для панорамы": [
+          "AndesDLNA__com.mega.dlna_src"
+        ],
+        "Слишком высокая скорость": [
+          "AndesMedia__com.mega.media_src"
+        ],
+        "На высокой скорости панорама недоступна": [
+          "AndesWiredProjection__com.mega.wired_src"
+        ]
+      }
+    },
+    "This phone": {
+      "chosen": "Это устройство",
+      "variants": {
+        "Этот смартфон": [
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Это устройство": [
+          "CarSettings__com.android.car.settings_src"
+        ]
+      }
+    },
+    "Tips": {
+      "chosen": "Уведомление",
+      "variants": {
+        "Внимание": [
+          "AndesCarSettings__com.mega.carsettings_src"
+        ],
+        "Уведомление": [
+          "AndesMobileConnect__com.mega.mobileconnect_src"
+        ]
+      }
+    },
+    "Try again": {
+      "chosen": "Повторить попытку",
+      "variants": {
+        "Повторить попытку": [
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Попробовать еще раз": [
+          "AndesUser__com.mega.user_src"
+        ]
+      }
+    },
+    "Turn off Wi-Fi": {
+      "chosen": "Выключить Wi-Fi",
+      "variants": {
+        "Выключить Wi-Fi": [
+          "AndesLauncher__com.android.launcher3_src"
+        ],
+        "Выключите Wi -Fi": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Turn on Wi-Fi": {
+      "chosen": "Включить Wi-Fi",
+      "variants": {
+        "Включить Wi-Fi": [
+          "AndesLauncher__com.android.launcher3_src"
+        ],
+        "Включите Wi-Fi": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Unnamed device": {
+      "chosen": "Безымянное устройство",
+      "variants": {
+        "Безымянное устройство": [
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Устройство без названия": [
+          "CarSettings__com.android.car.settings_src"
+        ]
+      }
+    },
+    "Unpair": {
+      "chosen": "Забыть",
+      "variants": {
+        "Забыть": [
+          "AndesLauncher__com.android.launcher3_src"
+        ],
+        "забывать": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Unpair device": {
+      "chosen": "Забыть устройство",
+      "variants": {
+        "Забыть устройство": [
+          "AndesLauncher__com.android.launcher3_src"
+        ],
+        "Забыл устройство": [
+          "AndesSystemUI__com.android.systemui_src"
+        ]
+      }
+    },
+    "Use %1$s": {
+      "chosen": "Использовать %1$s",
+      "variants": {
+        "Выбрать оператора \\\"%1$s\\\"": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Использовать %1$s": [
+          "CarSettings__com.android.car.settings_src"
+        ]
+      }
+    },
+    "View": {
+      "chosen": "Подробнее",
+      "variants": {
+        "Проверять": [
+          "AndesLauncher__com.android.launcher3_src",
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Подробнее": [
+          "AndesBtPhone__com.mega.btphone_src"
+        ],
+        "Смотреть": [
+          "AndesSceneMode__com.mega.scenemode_src"
+        ]
+      }
+    },
+    "Volume": {
+      "chosen": "Громкость",
+      "variants": {
+        "Объем": [
+          "AndesSystemUI__com.android.systemui_src",
+          "CarSettings__com.android.car.settings_src"
+        ],
+        "Громкость": [
+          "AndesSceneMode__com.mega.scenemode_src"
+        ]
+      }
+    },
+    "Wallpaper": {
+      "chosen": "Обои",
+      "variants": {
+        "Обои": [
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Установить обои": [
+          "AndesCarSettings__com.mega.carsettings_src"
+        ]
+      }
+    },
+    "Wi-Fi name:": {
+      "chosen": "Wi-Fi:",
+      "variants": {
+        "Имя Wi‑Fi:": [
+          "AndesDLNA__com.mega.dlna_src"
+        ],
+        "Wi-Fi:": [
+          "AndesDocumentsUI__com.mega.documentsui_src"
+        ]
+      }
+    },
+    "Wi-Fi password:": {
+      "chosen": "Пароль Wi‑Fi:",
+      "variants": {
+        "Пароль Wi‑Fi:": [
+          "AndesDLNA__com.mega.dlna_src"
+        ],
+        "Пароль:": [
+          "AndesDocumentsUI__com.mega.documentsui_src"
+        ]
+      }
+    },
+    "Widget is initializing": {
+      "chosen": "Загрузка виджета…",
+      "variants": {
+        "Инициализация виджета": [
+          "AndesBtPhone__com.mega.btphone_src",
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesHive__com.mega.hive_src",
+          "AndesLauncher__com.android.launcher3_src",
+          "AndesMobileConnect__com.mega.mobileconnect_src",
+          "AndesSceneMode__com.mega.scenemode_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "AndesUser__com.mega.user_src",
+          "AndesWiredProjection__com.mega.wired_src"
+        ],
+        "Загрузка виджета": [
+          "AndesDVR__com.mega.dvr_src"
+        ],
+        "Загрузка виджета…": [
+          "AndesDocumentsUI__com.mega.documentsui_src"
+        ],
+        "Инициализация…": [
+          "AndesMedia__com.mega.media_src"
+        ]
+      }
+    },
+    "Wireless charging": {
+      "chosen": "Беспров. зарядка",
+      "variants": {
+        "Беспроводная зарядка мобильного телефона": [
+          "AndesCarSettings__com.mega.carsettings_src"
+        ],
+        "Беспров. зарядка": [
+          "AndesLauncher__com.android.launcher3_src"
+        ]
+      }
+    },
+    "Wireless projection": {
+      "chosen": "Беспроводная трансляция",
+      "variants": {
+        "Экран телефона": [
+          "AndesDLNA__com.mega.dlna_src"
+        ],
+        "Беспров. трансляция": [
+          "AndesDLNA__com.mega.dlna_src"
+        ],
+        "Трансляция с телефона": [
+          "AndesWiredProjection__com.mega.wired_src"
+        ],
+        "Беспроводная трансляция": [
+          "AndesWiredProjection__com.mega.wired_src"
+        ]
+      }
+    },
+    "alarm": {
+      "chosen": "Предупреждение",
+      "variants": {
+        "Предупреждение": [
+          "AndesDVR__com.mega.dvr_src"
+        ],
+        "Тревога": [
+          "AndesDocumentsUI__com.mega.documentsui_src"
+        ]
+      }
+    },
+    "alert": {
+      "chosen": "Предупр.",
+      "variants": {
+        "Тревога": [
+          "AndesDVR__com.mega.dvr_src"
+        ],
+        "Предупр.": [
+          "AndesDocumentsUI__com.mega.documentsui_src"
+        ]
+      }
+    },
+    "at %1$s": {
+      "chosen": "Время: %1$s",
+      "variants": {
+        "%1$s": [
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Время: %1$s": [
+          "CarSettings__com.android.car.settings_src"
+        ]
+      }
+    },
+    "enter": {
+      "chosen": "Ввод",
+      "variants": {
+        "Ввод": [
+          "AndesAbUpdate__com.abupdate.ota_src",
+          "AndesBtPhone__com.mega.btphone_src",
+          "AndesCarSettings__com.mega.carsettings_src",
+          "AndesDLNA__com.mega.dlna_src",
+          "AndesDVR__com.mega.dvr_src",
+          "AndesDocumentsUI__com.mega.documentsui_src",
+          "AndesHive__com.mega.hive_src",
+          "AndesLauncher__com.android.launcher3_src",
+          "AndesMedia__com.mega.media_src",
+          "AndesSceneMode__com.mega.scenemode_src",
+          "AndesSystemUI__com.android.systemui_src",
+          "AndesUser__com.mega.user_src",
+          "AndesWiredProjection__com.mega.wired_src",
+          "CarSettingsIntelligence__com.android.settings.intelligence_src",
+          "CarSettings__com.android.car.settings_src",
+          "MegaEngineeringMode__com.mega.app.engineeringmode_src",
+          "PetalMapsAuto__com.huawei.maps.car.app_src",
+          "WtAppMarket__com.changan.appmarket_src"
+        ],
+        "Входить": [
+          "AndesMobileConnect__com.mega.mobileconnect_src",
+          "PetalMapsAuto__com.huawei.maps.car.app_src"
+        ]
+      }
+    },
+    "on %1$s": {
+      "chosen": "Время: %1$s",
+      "variants": {
+        "%1$s": [
+          "AndesSystemUI__com.android.systemui_src"
+        ],
+        "Время: %1$s": [
+          "CarSettings__com.android.car.settings_src"
+        ]
+      }
+    },
+    "· After turning off the engine, try to restart the car system and reconnect": {
+      "chosen": "• Выключите авто, перезапустите ГУ и подключитесь снова",
+      "variants": {
+        "• Нажмите «Переподключить»": [
+          "AndesMobileConnect__com.mega.mobileconnect_src"
+        ],
+        "• Выключите авто, перезапустите ГУ и подключитесь снова": [
+          "AndesMobileConnect__com.mega.mobileconnect_src"
+        ]
+      }
+    },
+    "· Click the reconnect button to reconnect": {
+      "chosen": "• Нажмите «Переподключить»",
+      "variants": {
+        "• Нажмите «Переподключить»": [
+          "AndesMobileConnect__com.mega.mobileconnect_src"
+        ],
+        "• Отключите точку доступа ГУ на телефоне и подключитесь снова": [
+          "AndesMobileConnect__com.mega.mobileconnect_src"
+        ]
+      }
+    }
+  },
+  "meta": {
+    "from_gui": true,
+    "track": "en"
+  }
+}

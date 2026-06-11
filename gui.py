@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""Точка входа GUI. Реализация — в пакете gui_pkg/."""
+"""Точка входа GUI. Реализация — в gui_pkg/. Зависимости: pip install -r requirements/gui.txt"""
 
 from __future__ import annotations
 

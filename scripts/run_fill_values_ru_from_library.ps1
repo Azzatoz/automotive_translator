@@ -1,9 +1,10 @@
-﻿# fill_values_ru_from_library.py — библиотека, затем Google; отчёт в tools/reports/
+﻿# fill_values_ru_from_library.py — библиотека, затем Google; отчёт в reports/
 $ErrorActionPreference = 'Stop'
 
-$ToolsDir = $PSScriptRoot
-$Req = Join-Path $ToolsDir 'requirements-fill-values-ru.txt'
-$ProjectRoot = (Resolve-Path (Join-Path $ToolsDir '..')).Path
+$ScriptsDir = $PSScriptRoot
+$RepoRoot = (Resolve-Path (Join-Path $ScriptsDir '..')).Path
+$Req = Join-Path $RepoRoot 'requirements\fill-values-ru.txt'
+$ProjectRoot = (Resolve-Path (Join-Path $RepoRoot '..')).Path
 
 function Get-PythonCommand {
     if ($env:PYTHON) {
@@ -203,6 +204,6 @@ if ($hasDeepTranslator -ne 0) {
 }
 
 $env:PYTHONUNBUFFERED = '1'
-$pyScript = Join-Path $ToolsDir 'fill_values_ru_from_library.py'
+$pyScript = Join-Path $ScriptsDir 'fill_values_ru_from_library.py'
 Invoke-Python $python $pyScript @scriptArgs
 exit $LASTEXITCODE
