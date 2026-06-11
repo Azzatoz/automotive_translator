@@ -176,6 +176,7 @@ QPushButton:pressed {{ background: {t.border}; }}
 QPushButton:disabled {{ color: {t.text_muted}; border-color: {t.border}; }}
 
 QPushButton#themeToggleBtn,
+QPushButton#faqBtn,
 QPushButton#sidebarModeBtn {{
     padding: 4px 8px;
     min-width: 32px;

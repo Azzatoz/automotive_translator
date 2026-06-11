@@ -32,6 +32,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from gui_pkg.faq import show_faq
 from gui_pkg.config import (
     LAYOUT_DIR,
     LIBRARY_DIR,
@@ -139,6 +140,12 @@ class MainWindow(QMainWindow):
         self._btn_theme.setToolTip(self._theme_mgr.toggle_button_tooltip())
         self._btn_theme.clicked.connect(self._toggle_theme)
         title_layout.addWidget(self._btn_theme)
+        self._btn_faq = QPushButton("?")
+        self._btn_faq.setObjectName("faqBtn")
+        self._btn_faq.setFixedWidth(36)
+        self._btn_faq.setToolTip("Справка (FAQ)")
+        self._btn_faq.clicked.connect(self._show_faq)
+        title_layout.addWidget(self._btn_faq)
         self._btn_sidebar_mode = QPushButton(sidebar_mode_button_icon(self._sidebar_mode))
         self._btn_sidebar_mode.setObjectName("sidebarModeBtn")
         self._btn_sidebar_mode.setToolTip(sidebar_mode_tooltip(self._sidebar_mode))
@@ -201,6 +208,7 @@ class MainWindow(QMainWindow):
         content_layout = QVBoxLayout(content)
         content_layout.setContentsMargins(0, 0, 0, 0)
         content_layout.setSpacing(0)
+        self._init_translate_controls()
         self._tabs = QTabWidget()
         self._tabs.addTab(self._build_overview_tab(), "Обзор")
         self._tabs.addTab(self._build_actions_tab(), "Действия")
@@ -268,19 +276,41 @@ class MainWindow(QMainWindow):
         self._module_title.setObjectName("moduleTitle")
         layout.addWidget(self._module_title)
 
-        quick_label = QLabel("БЫСТРЫЕ ДЕЙСТВИЯ")
-        quick_label.setObjectName("sectionLabel")
-        layout.addWidget(quick_label)
+        layout.addWidget(self._translate_group)
+
+        maint_label = QLabel("СЛОВАРЬ И LAYOUT")
+        maint_label.setObjectName("sectionLabel")
+        layout.addWidget(maint_label)
         quick = QGroupBox()
         self._quick_grid = QGridLayout(quick)
         self._quick_grid.setSpacing(8)
         actions: list[tuple[str, str, object, bool]] = [
-            ("Дополнить словарь", "Доп.\nсловарь", self._quick_ensure_dictionary, True),
-            ("Собрать из APK", "Collect\nAPK", self._quick_collect, False),
-            ("Сортировать", "Сортир.", self._quick_sort, False),
+            (
+                "Добавить в словарь пропущенные строки заглушкой « » (режим ensure-dictionary)",
+                "Заглушки\nв словарь",
+                self._quick_placeholders,
+                True,
+            ),
+            (
+                "Собрать общий словарь из уже переведённых values-ru всех модулей",
+                "Collect\nAPK",
+                self._quick_collect,
+                False,
+            ),
+            ("Сортировать словари", "Сортир.", self._quick_sort, False),
+            (
+                "Исправить в словарях шаблоны дат (月/年/日 → dd.MM.yyyy и плейсхолдеры)",
+                "Формат\nдат",
+                self._quick_fix_dates,
+                False,
+            ),
+            (
+                "Создать resolutions.json из conflicts — вариант с большинством модулей",
+                "Шаблон\nконфл.",
+                self._quick_init_conflicts,
+                False,
+            ),
             ("Проверка словаря", "Аудит", self._quick_audit, False),
-            ("Формат дат", "Даты", self._quick_fix_dates, False),
-            ("Шаблон конфликтов", "Шаблон\nконфл.", self._quick_init_conflicts, False),
             ("Поиск хардкода", "Скан\nlayout", self._quick_layout_scan, False),
             ("Хардкод → strings", "В\nstrings", self._quick_layout_inject, False),
         ]
@@ -310,48 +340,51 @@ class MainWindow(QMainWindow):
         )
         return scroll
 
-    def _build_actions_tab(self) -> QWidget:
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        w = QWidget()
-        layout = QVBoxLayout(w)
-        layout.setContentsMargins(16, 16, 16, 16)
-        layout.setSpacing(14)
+    def _init_translate_controls(self) -> None:
+        """Панель перевода APK на вкладке «Обзор» (общие виджеты для fill/collect)."""
+        self._translate_group = QGroupBox("Быстрые действия — перевод")
+        root = QVBoxLayout(self._translate_group)
+        root.setSpacing(10)
 
-        intro = QLabel(
-            "<b>Две отдельные операции</b><br>"
-            "① <b>Перевод values-ru</b> — заполняет русские строки в XML модуля.<br>"
-            "② <b>Хардкод в layout</b> — находит текст в layout-файлах и выносит в strings.xml. "
-            "После шага ② обычно нужен шаг ① в режиме «Только из словаря»."
-        )
-        intro.setObjectName("hintLabel")
-        intro.setWordWrap(True)
-        intro.setTextFormat(Qt.TextFormat.RichText)
-        layout.addWidget(intro)
+        task_row = QHBoxLayout()
+        task_row.addWidget(QLabel("Задача:"))
+        self._task_group = QButtonGroup(self)
+        self._rb_task_apk = QRadioButton("Перевести приложение (values-ru в APK)")
+        self._rb_task_dict = QRadioButton("Пополнить общий словарь")
+        self._rb_task_apk.setChecked(True)
+        self._task_group.addButton(self._rb_task_apk, 0)
+        self._task_group.addButton(self._rb_task_dict, 1)
+        task_row.addWidget(self._rb_task_apk)
+        task_row.addWidget(self._rb_task_dict)
+        task_row.addStretch()
+        root.addLayout(task_row)
 
-        scope_group = QGroupBox("Область — какие модули")
-        scope_layout = QVBoxLayout(scope_group)
+        scope_row = QHBoxLayout()
+        scope_row.addWidget(QLabel("Модули:"))
         self._scope_group = QButtonGroup(self)
-        self._rb_scope_all = QRadioButton("Все модули в папке проекта")
-        self._rb_scope_one = QRadioButton("Только выбранный модуль слева")
+        self._rb_scope_all = QRadioButton("Все в папке")
+        self._rb_scope_one = QRadioButton("Только выбранный")
         self._rb_scope_all.setChecked(True)
         self._scope_group.addButton(self._rb_scope_all, 0)
         self._scope_group.addButton(self._rb_scope_one, 1)
-        scope_layout.addWidget(self._rb_scope_all)
-        scope_layout.addWidget(self._rb_scope_one)
-        self._actions_scope_label = QLabel()
-        self._actions_scope_label.setObjectName("hintLabel")
-        self._actions_scope_label.setWordWrap(True)
-        scope_layout.addWidget(self._actions_scope_label)
-        self._scope_group.buttonClicked.connect(lambda: self._update_actions_scope_label())
-        layout.addWidget(scope_group)
+        scope_row.addWidget(self._rb_scope_all)
+        scope_row.addWidget(self._rb_scope_one)
+        scope_row.addStretch()
+        root.addLayout(scope_row)
 
-        fill_group = QGroupBox("① Перевод values-ru")
-        fill_layout = QVBoxLayout(fill_group)
-        fill_layout.setSpacing(10)
+        self._scope_label = QLabel()
+        self._scope_label.setObjectName("hintLabel")
+        self._scope_label.setWordWrap(True)
+        root.addWidget(self._scope_label)
+        self._scope_group.buttonClicked.connect(lambda: self._update_scope_label())
+
+        self._apk_options = QWidget()
+        apk_layout = QVBoxLayout(self._apk_options)
+        apk_layout.setContentsMargins(0, 0, 0, 0)
+        apk_layout.setSpacing(8)
 
         lang_row = QHBoxLayout()
-        lang_row.addWidget(QLabel("Язык оригинала в APK:"))
+        lang_row.addWidget(QLabel("Язык в APK:"))
         self._lang_group = QButtonGroup(self)
         self._rb_zh = QRadioButton("Китайский")
         self._rb_en = QRadioButton("Английский")
@@ -361,50 +394,107 @@ class MainWindow(QMainWindow):
         lang_row.addWidget(self._rb_zh)
         lang_row.addWidget(self._rb_en)
         lang_row.addStretch()
-        fill_layout.addLayout(lang_row)
+        apk_layout.addLayout(lang_row)
 
-        mode_label = QLabel("Режим перевода")
-        mode_label.setObjectName("sectionLabel")
-        fill_layout.addWidget(mode_label)
+        mode_row = QHBoxLayout()
+        mode_row.addWidget(QLabel("Режим:"))
         self._mode_group = QButtonGroup(self)
-        self._rb_normal = QRadioButton("Словарь + Google для пропусков")
-        self._rb_library_only = QRadioButton("Только из словаря")
-        self._rb_ensure_dict = QRadioButton("Дополнить словарь (заглушки)")
+        self._rb_normal = QRadioButton("Словарь + Google")
+        self._rb_library_only = QRadioButton("Только словарь")
+        self._rb_ensure_dict = QRadioButton("Заглушки в словарь")
         self._rb_normal.setChecked(True)
         for i, rb in enumerate((self._rb_normal, self._rb_library_only, self._rb_ensure_dict)):
             self._mode_group.addButton(rb, i)
-            fill_layout.addWidget(rb)
+            mode_row.addWidget(rb)
+        mode_row.addStretch()
+        apk_layout.addLayout(mode_row)
+        self._rb_ensure_dict.setVisible(False)
+
+        opts_row = QHBoxLayout()
+        self._chk_no_overwrite = QCheckBox("Не трогать готовые строки")
+        self._chk_no_overwrite.setChecked(True)
+        self._chk_no_overwrite.setToolTip(
+            "Уже переведённые строки в values-ru не перезаписывать."
+        )
+        self._chk_dry_run = QCheckBox("Пробный запуск")
+        self._chk_strings_only = QCheckBox("Только strings.xml")
+        self._chk_auto_collect = QCheckBox("После — собрать словарь из APK")
+        self._chk_auto_collect.setChecked(False)
+        self._chk_auto_collect.setToolTip(
+            "Пересобрать общий словарь и отчёт конфликтов. "
+            "Для уже переведённого проекта обычно не нужно."
+        )
+        for chk in (
+            self._chk_no_overwrite,
+            self._chk_dry_run,
+            self._chk_strings_only,
+            self._chk_auto_collect,
+        ):
+            opts_row.addWidget(chk)
+        opts_row.addStretch()
+        apk_layout.addLayout(opts_row)
+
         self._fill_mode_hint = QLabel()
         self._fill_mode_hint.setObjectName("hintLabel")
         self._fill_mode_hint.setWordWrap(True)
-        fill_layout.addWidget(self._fill_mode_hint)
+        apk_layout.addWidget(self._fill_mode_hint)
         self._mode_group.buttonClicked.connect(self._on_fill_mode_changed)
+        root.addWidget(self._apk_options)
 
-        self._chk_dry_run = QCheckBox("Пробный запуск — ничего не записывать")
-        self._chk_strings_only = QCheckBox("Только strings.xml")
-        self._chk_no_overwrite = QCheckBox("Не трогать уже переведённые строки")
-        self._chk_auto_collect = QCheckBox("После перевода — обновить общий словарь из APK")
-        self._chk_auto_collect.setChecked(True)
-        for chk in (
-            self._chk_dry_run,
-            self._chk_strings_only,
-            self._chk_no_overwrite,
-            self._chk_auto_collect,
-        ):
-            fill_layout.addWidget(chk)
+        self._dict_options = QWidget()
+        dict_layout = QVBoxLayout(self._dict_options)
+        dict_layout.setContentsMargins(0, 0, 0, 0)
+        self._dict_hint = QLabel(
+            "Добавляет в общий словарь пропущенные строки заглушкой « » и обновляет values-ru. "
+            "Не путать с переводом APK: Google не вызывается. "
+            "«Собрать из APK» — отдельная кнопка ниже; может показать конфликты между модулями."
+        )
+        self._dict_hint.setObjectName("hintLabel")
+        self._dict_hint.setWordWrap(True)
+        dict_layout.addWidget(self._dict_hint)
+        dict_btn_row = QHBoxLayout()
+        self._btn_dict_collect = QPushButton("Собрать словарь из APK")
+        self._btn_dict_collect.clicked.connect(self._quick_collect)
+        dict_btn_row.addWidget(self._btn_dict_collect)
+        dict_btn_row.addStretch()
+        dict_layout.addLayout(dict_btn_row)
+        self._dict_options.setVisible(False)
+        root.addWidget(self._dict_options)
 
-        self._btn_run_fill = QPushButton("Начать перевод values-ru")
+        self._btn_run_fill = QPushButton("Перевести APK")
         self._btn_run_fill.setObjectName("primaryBtn")
         self._btn_run_fill.clicked.connect(self._run_fill)
-        fill_layout.addWidget(self._btn_run_fill)
+        root.addWidget(self._btn_run_fill)
         self._action_buttons.append(self._btn_run_fill)
-        layout.addWidget(fill_group)
 
-        layout_group = QGroupBox("② Хардкод в layout-файлах")
+        self._task_group.buttonClicked.connect(self._on_task_changed)
+        self._on_task_changed()
+        self._on_fill_mode_changed()
+        self._update_scope_label()
+
+    def _build_actions_tab(self) -> QWidget:
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        w = QWidget()
+        layout = QVBoxLayout(w)
+        layout.setContentsMargins(16, 16, 16, 16)
+        layout.setSpacing(14)
+
+        intro = QLabel(
+            "<b>Перевод values-ru</b> — на вкладке <b>Обзор</b> в блоке «Быстрые действия».<br>"
+            "Здесь — только <b>хардкод в layout</b>: вынести текст в strings.xml, "
+            "затем на Обзоре запустить «Только словарь»."
+        )
+        intro.setObjectName("hintLabel")
+        intro.setWordWrap(True)
+        intro.setTextFormat(Qt.TextFormat.RichText)
+        layout.addWidget(intro)
+
+        layout_group = QGroupBox("Хардкод в layout-файлах")
         layout_form = QVBoxLayout(layout_group)
         layout_intro = QLabel(
             "Ищет китайский/английский текст в res/layout. "
-            "Рекомендуемый путь: вынести в strings.xml → затем «Только из словаря» выше."
+            "Рекомендуемый путь: вынести в strings.xml → на Обзоре «Только словарь»."
         )
         layout_intro.setObjectName("hintLabel")
         layout_intro.setWordWrap(True)
@@ -435,8 +525,6 @@ class MainWindow(QMainWindow):
         self._action_buttons.append(self._btn_run_layout)
         layout.addWidget(layout_group)
 
-        self._on_fill_mode_changed()
-        self._update_actions_scope_label()
         layout.addStretch()
         scroll.setWidget(w)
         return scroll
@@ -444,52 +532,54 @@ class MainWindow(QMainWindow):
     def _scope_is_all_modules(self) -> bool:
         return self._rb_scope_all.isChecked()
 
-    def _update_actions_scope_label(self) -> None:
+    def _is_apk_task(self) -> bool:
+        return self._rb_task_apk.isChecked()
+
+    def _update_scope_label(self) -> None:
         root = self._current_root()
         info = self._current_module()
         if self._scope_is_all_modules():
             if root:
                 n = len(self._modules)
-                self._actions_scope_label.setText(
-                    f"Будут обработаны все модули в папке ({n} шт.): {root}"
-                )
+                self._scope_label.setText(f"Обработка: все модули ({n})")
             else:
-                self._actions_scope_label.setText("Укажите папку проекта вверху окна.")
-            self._rb_scope_one.setEnabled(True)
+                self._scope_label.setText("Укажите папку проекта вверху окна.")
+        elif info:
+            self._scope_label.setText(f"Обработка: {info.display}")
         else:
-            if info:
-                self._actions_scope_label.setText(
-                    f"Будет обработан модуль: {info.display}"
-                )
-            else:
-                self._actions_scope_label.setText(
-                    "Выберите модуль в списке слева или переключитесь на «Все модули»."
-                )
-            self._rb_scope_one.setEnabled(True)
+            self._scope_label.setText(
+                "Выберите модуль слева или переключитесь на «Все в папке»."
+            )
+
+    def _on_task_changed(self) -> None:
+        apk = self._is_apk_task()
+        self._apk_options.setVisible(apk)
+        self._dict_options.setVisible(not apk)
+        for chk in (self._chk_no_overwrite, self._chk_dry_run, self._chk_strings_only, self._chk_auto_collect):
+            chk.setVisible(apk)
+        self._translate_group.setTitle(
+            "Быстрые действия — перевод APK" if apk else "Быстрые действия — словарь"
+        )
+        self._btn_run_fill.setText("Перевести APK" if apk else "Дополнить словарь заглушками")
+        if apk and self._mode_group.checkedId() == 2:
+            self._rb_normal.setChecked(True)
+        self._on_fill_mode_changed()
 
     def _on_fill_mode_changed(self) -> None:
+        if not self._is_apk_task():
+            self._fill_mode_hint.setText("")
+            return
         mode_id = self._mode_group.checkedId()
         hints = {
             0: (
-                "Сначала подставляет перевод из словаря. Что не найдено — "
-                "переводит через Google (нужен интернет)."
+                "Заполняет values-ru в APK: сначала из словаря, остальное — Google (нужен интернет)."
             ),
             1: (
-                "Берёт только готовые переводы из словаря. "
-                "Неизвестные строки не трогает и Google не вызывает."
-            ),
-            2: (
-                "Добавляет в словарь пропущенные строки заглушкой и обновляет values-ru. "
-                "Google не вызывается. Обычно делают перед массовым переводом."
+                "Подставляет в APK только то, что уже есть в словаре. "
+                "Google не вызывается — для доводки уже переведённого проекта."
             ),
         }
         self._fill_mode_hint.setText(hints.get(mode_id, ""))
-        is_ensure = mode_id == 2
-        is_library = mode_id == 1
-        self._chk_no_overwrite.setVisible(is_ensure)
-        self._chk_auto_collect.setVisible(not is_ensure)
-        if is_library:
-            self._chk_auto_collect.setChecked(True)
 
     def _build_conflicts_tab(self) -> QWidget:
         w = QWidget()
@@ -693,6 +783,9 @@ class MainWindow(QMainWindow):
     def _toggle_theme(self) -> None:
         self._theme_mgr.toggle()
 
+    def _show_faq(self) -> None:
+        show_faq(self)
+
     def _on_theme_changed(self) -> None:
         self._theme = self._theme_mgr.current
         app = QApplication.instance()
@@ -822,7 +915,7 @@ class MainWindow(QMainWindow):
             self._module_rows[mod.name] = (item, row)
 
         self._update_path_label()
-        self._update_actions_scope_label()
+        self._update_scope_label()
 
         if self._scan_worker and self._scan_worker.isRunning():
             self._scan_worker.terminate()
@@ -905,7 +998,7 @@ class MainWindow(QMainWindow):
         info = self._modules.get(name)
         if info:
             self._update_overview(info)
-        self._update_actions_scope_label()
+        self._update_scope_label()
         if self._tabs.currentIndex() == 2:
             self._reload_conflicts_ui()
 
@@ -1083,6 +1176,8 @@ class MainWindow(QMainWindow):
         return args
 
     def _run_fill(self) -> None:
+        if not self._is_apk_task():
+            self._rb_ensure_dict.setChecked(True)
         args = self._build_fill_args()
         if not args:
             return
@@ -1105,9 +1200,13 @@ class MainWindow(QMainWindow):
         self._runner.run_single(args, label)
         self._tabs.setCurrentIndex(3)
 
-    def _quick_ensure_dictionary(self) -> None:
-        self._rb_ensure_dict.setChecked(True)
+    def _quick_placeholders(self) -> None:
+        self._rb_task_dict.setChecked(True)
+        self._on_task_changed()
         self._run_fill()
+
+    def _quick_ensure_dictionary(self) -> None:
+        self._quick_placeholders()
 
     def _quick_collect(self) -> None:
         root = self._current_root()
