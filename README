@@ -1,0 +1,193 @@
+# automotive_translator
+
+Инструменты для перевода Android APK китайских автомобильных head unit (Deepal, Voyah, Qinggan, Dongfeng и др.) — заполнение `res/values-ru` в модулях `*_src` без изменения `res/values`.
+
+## Словари
+
+| Файл | Ключ | Значение |
+|------|------|----------|
+| `translation_library_ru_en.json` | английский текст | русский |
+| `translation_library_ru_zh-rCN.json` | китайский текст | русский |
+
+Один и тот же смысл может быть и на английском, и на китайском — это **разные ключи** в разных файлах.
+
+### Приоритет исходника (values-en)
+
+Для каждого модуля считается покрытие: число имён ресурсов в `values-en` / в `values` (по `strings.xml`, `plurals.xml`, `arrays.xml`).
+
+| Покрытие | Поведение |
+|----------|-----------|
+| **≥ 30%** | Модуль en-ориентированный: для ключа сначала текст из `values-en`, иначе из `values` (латиница → en-словарь, иероглифы → zh). Поиск в словарях: сначала en-трек и ключи из `values-en`. |
+| **< 30%** | В лог пишется `[warn]`; для модуля приоритет `values` (как раньше: при смешанных locale сначала zh-трек в словаре). |
+
+Пер-строка: если у ресурса есть непустой `values-en` и модуль ≥30%, главный исходник — английский из `values-en`, даже когда в `values` лежит китайский.
+
+При подстановке в APK скрипт по-прежнему собирает **все** варианты из locale-папок и ищет перевод в **обоих** словарях; порядок перебора зависит от покрытия `values-en`.
+
+Заглушка «нет перевода»: `" "` (пробел). В JSON при сохранении: сначала все нормальные переводы по алфавиту, заглушки — **в конце** (`sort_translation_libraries.py` пересортирует вручную).
+
+## Структура модуля
+
+```
+SomeApp_src/res/
+  values/           ← оригинал (не меняется)
+  values-en/        ← опционально
+  values-zh-rCN/    ← опционально
+  values-zh/        ← опционально
+  values-ru/        ← сюда пишутся переводы
+```
+
+Скрипты сопоставляют строки по **имени ресурса** (`name`), а не только по содержимому `values`.
+
+### Ссылки на системные ресурсы
+
+Строки вида `@android:string/cancel`, `@android:string/ok`, `@string/…` **не переводятся** и **не попадают в словари** (`fill`, `collect`, `--ensure-dictionary`). В `values-ru` копируется та же ссылка — UI берёт текст из фреймворка Android. Не подменяйте ссылки пробелом или «переводом» вручную.
+
+## Скрипты
+
+| Скрипт | Назначение |
+|--------|------------|
+| `fill_values_ru_from_library.py` | Главный: словарь → `values-ru`, опционально Google |
+| `library/collect_translation_library_ru.py` | Собрать пары из уже готовых `values` + `values-ru` в словари |
+| `sort_translation_libraries.py` | Пересортировать en/zh JSON (переводы A–Z, заглушки в конце) |
+| `library/apply_translation_conflict_resolutions_ru.py` | Один исходник — несколько русских вариантов в разных APK |
+| `run_fill_values_ru_from_library.sh` | Интерактивный запуск fill (Linux) |
+| `run_fill_values_ru_from_library.ps1` | Интерактивный запуск fill (Windows) |
+
+Отчёты: `reports/` (генерируются локально, в git не коммитятся).
+
+## Режимы fill
+
+### `--ensure-dictionary` (без Google)
+
+Рекомендуемый старт для проекта или модуля.
+
+1. Для каждой строки собираются все тексты из locale-папок.
+2. Готовый русский из `values-ru` → в словарь (en или zh по типу текста).
+3. Словарь → в `values-ru` (по умолчанию **с перезаписью**).
+4. Нет перевода → в словарь и APK ставится `" "`.
+
+```bash
+python3 fill_values_ru_from_library.py \
+  --ensure-dictionary \
+  --root "/path/to/translated"
+```
+
+Один модуль (не смешивать с `--root` на весь каталог, если нужен только он):
+
+```bash
+python3 fill_values_ru_from_library.py \
+  --ensure-dictionary \
+  -m "/path/to/com.qinggan.app.login_src"
+```
+
+Только дописать новые ключи, не трогая уже переведённое: `--no-overwrite`.
+
+### `--library-only` (без Google)
+
+Подставляет только то, что уже есть в словарях. Загружаются **оба** файла en + zh.
+
+```bash
+python3 fill_values_ru_from_library.py \
+  --library-only \
+  --root "/path/to/translated"
+```
+
+Перезаписать `values-ru` только там, где исходник есть в словаре: `--library-overwrite`.
+
+### Обычный fill (словарь + Google)
+
+Сначала словарь, иначе Google Translate. Нужен `deep-translator` (см. `requirements-fill-values-ru.txt`).
+
+```bash
+python3 fill_values_ru_from_library.py \
+  --source-lang zh-CN \
+  --root "/path/to/translated"
+```
+
+`--source-lang en` — для модулей с английским в `values`.  
+`--no-lang-filter` — не отсекать «чужой» язык в `values` (осторожно на смешанных прошивках).
+
+## collect — обновить словари из APK
+
+Читает готовые пары `values` + `values-ru` и дописывает в en/zh словари. APK **не меняет**.
+
+```bash
+python3 library/collect_translation_library_ru.py \
+  --root "/path/to/translated" \
+  --track both
+```
+
+`--track en` / `--track zh` — только один трек.  
+`--add-missing-placeholders` — пропуски в словарь с `" "` (без записи в APK).  
+`--no-overwrite-library` — не перезаписывать уже существующие ключи в словаре.
+
+Отчёты: `translation_library_ru_en_missing.json`, `translation_library_ru_zh-rCN_missing.json`, `translation_library_ru_conflicts.json`.
+
+## Аудит и правка шаблонов дат в словарях
+
+Испорченные шаблоны (`ЭЭЭЭ, ММММ д`, «ММ месяц дд день», `М/д/г` вместо `d.M.y` и т.п.) — массово:
+
+```bash
+python3 library/fix_library_date_formats.py
+```
+
+Отчёт по прочим подозрительным переводам (пока без автоисправления):
+
+```bash
+python3 library/audit_translation_library.py --min-severity medium
+```
+
+После правок словаря — `fill --library-only` по нужным модулям или точечно в `values-ru`.
+
+## Сортировка словарей
+
+```bash
+python3 sort_translation_libraries.py
+python3 sort_translation_libraries.py --en-only
+python3 sort_translation_libraries.py --dry-run
+```
+
+## Конфликты
+
+Если один исходник в разных модулях переведён по-разному — см. `reports/translation_library_ru_conflicts.json`.
+
+```bash
+python3 library/apply_translation_conflict_resolutions_ru.py --init --majority
+# правка library/translation_library_ru_resolutions.json → chosen
+python3 library/apply_translation_conflict_resolutions_ru.py --apply
+python3 library/collect_translation_library_ru.py --root "..." --track both
+```
+
+## Типичный цикл
+
+1. `fill --ensure-dictionary` на `--root` или `-m` для модуля  
+2. Правка словарей: поиск `" ": " "` в конце JSON  
+3. `collect --track both`  
+4. `fill --library-only` (при необходимости `--library-overwrite`)  
+5. Конфликты — по необходимости  
+6. Google — только если осознанно нужен автоперевод пропусков  
+
+Перед сборкой APK в словарях не должно оставаться заглушек для нужных строк.
+
+## Какой трек у модулей (ориентир)
+
+| Трек | Примеры |
+|------|---------|
+| **en** | launcher, vehicle, vehiclesetting, video, bluetoothphone, camera |
+| **zh** | login, music, setting, carplay |
+
+Смешанные модули: для fill с Google не задавать один `--source-lang` на весь `--root` без фильтра — лучше `-m` по модулю или `--ensure-dictionary` / `--library-only`.
+
+## total_functions (отдельно)
+
+Не `strings.xml`. Голосовые команды в `assets/total_functions.json` — словарь `functions/translate_functions.json`.
+
+```bash
+bash functions/run_fill_values_ru.sh --only-total-functions --source-lang zh-CN
+python3 functions/verify_total_functions_ru.py
+```
+
+## TOR
+
+Словарь AdsHmi: `tor/translate_tor_dictionary_ru.py`.
