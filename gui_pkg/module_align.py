@@ -59,6 +59,10 @@ def collect_module_dict_mismatches(module_path: Path) -> list[ModuleDictMismatch
     return out
 
 
+def count_module_dict_mismatches(module_path: Path) -> int:
+    return len(collect_module_dict_mismatches(module_path))
+
+
 def mismatches_to_updates(mismatches: list[ModuleDictMismatch]) -> dict[str, str]:
     return {m.row_id: m.dict_ru for m in mismatches}
 

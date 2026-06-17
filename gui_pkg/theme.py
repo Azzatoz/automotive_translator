@@ -7,7 +7,7 @@ from PyQt6.QtCore import QObject, QSettings, pyqtSignal
 from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import QApplication
 
-ModuleStatus = Literal["ready", "placeholders", "conflicts", "unprocessed"]
+ModuleStatus = Literal["ready", "ready_drift", "placeholders", "conflicts", "unprocessed"]
 StatTone = Literal["default", "success", "warning", "danger"]
 
 
@@ -21,6 +21,7 @@ class AppTheme:
     bg_info: str
     bg_info_hover: str
     bg_success: str
+    bg_success_muted: str
     bg_warning: str
     bg_danger: str
 
@@ -29,6 +30,7 @@ class AppTheme:
     text_muted: str
     text_info: str
     text_success: str
+    text_success_muted: str
     text_warning: str
     text_danger: str
 
@@ -49,6 +51,7 @@ class AppTheme:
             bg_info="#eff6ff",
             bg_info_hover="#dbeafe",
             bg_success="#dcfce7",
+            bg_success_muted="#e4f2ea",
             bg_warning="#fef3c7",
             bg_danger="#fee2e2",
             text_primary="#0f172a",
@@ -56,6 +59,7 @@ class AppTheme:
             text_muted="#94a3b8",
             text_info="#1d4ed8",
             text_success="#15803d",
+            text_success_muted="#4d8f63",
             text_warning="#b45309",
             text_danger="#b91c1c",
             border="#e2e8f0",
@@ -72,6 +76,7 @@ class AppTheme:
             bg_info="#1e3a5f",
             bg_info_hover="#1e40af",
             bg_success="#14532d",
+            bg_success_muted="#1a3d28",
             bg_warning="#78350f",
             bg_danger="#7f1d1d",
             text_primary="#f1f5f9",
@@ -79,6 +84,7 @@ class AppTheme:
             text_muted="#64748b",
             text_info="#60a5fa",
             text_success="#4ade80",
+            text_success_muted="#6bc48a",
             text_warning="#fbbf24",
             text_danger="#f87171",
             border="#334155",
@@ -452,6 +458,7 @@ QRadioButton::indicator:disabled {{
     def badge_stylesheet(self, status: ModuleStatus) -> str:
         mapping: dict[ModuleStatus, tuple[str, str]] = {
             "ready": (self.bg_success, self.text_success),
+            "ready_drift": (self.bg_success_muted, self.text_success_muted),
             "placeholders": (self.bg_warning, self.text_warning),
             "conflicts": (self.bg_danger, self.text_danger),
             "unprocessed": (self.bg_muted, self.text_muted),

@@ -36,6 +36,7 @@ from gui_pkg.theme import AppTheme
 
 class DictionaryPanel(QWidget):
     merge_requested = pyqtSignal()
+    search_requested = pyqtSignal()
 
     def __init__(
         self,
@@ -84,6 +85,10 @@ class DictionaryPanel(QWidget):
         layout.addWidget(self._list, stretch=1)
 
         bar = QHBoxLayout()
+        btn_search = QPushButton("Поиск в словаре…")
+        btn_search.setToolTip("Поиск по исходнику, переводу и модулям с правкой JSON")
+        btn_search.clicked.connect(self.search_requested.emit)
+        bar.addWidget(btn_search)
         btn_refresh = QPushButton("Обновить")
         btn_refresh.clicked.connect(self.reload)
         bar.addWidget(btn_refresh)

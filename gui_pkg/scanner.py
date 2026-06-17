@@ -7,6 +7,7 @@ from pathlib import Path
 from typing import Any
 
 from gui_pkg.config import TRACKS
+from gui_pkg.module_align import count_module_dict_mismatches
 from gui_pkg.placeholder_editor import module_translation_stats
 
 
@@ -96,6 +97,24 @@ def count_conflicts_for_module(
     return count
 
 
+def resolve_module_status(
+    *,
+    total: int,
+    placeholders: int,
+    conflicts: int,
+    dict_mismatches: int,
+) -> str:
+    if conflicts > 0:
+        return "conflicts"
+    if placeholders > 0:
+        return "placeholders"
+    if total > 0:
+        if dict_mismatches > 0:
+            return "ready_drift"
+        return "ready"
+    return "unprocessed"
+
+
 def scan_module(
     module_path: Path,
     conflicts_cache: dict[str, list[dict[str, Any]]] | None = None,
@@ -110,24 +129,25 @@ def scan_module(
             "translated": 0,
             "placeholders": 0,
             "conflicts": conflicts,
+            "dict_mismatches": 0,
             "status": "unprocessed",
         }
 
     total, translated, placeholders = module_translation_stats(module_path)
-    if conflicts > 0:
-        status = "conflicts"
-    elif placeholders > 0:
-        status = "placeholders"
-    elif total > 0:
-        status = "ready"
-    else:
-        status = "unprocessed"
+    dict_mismatches = count_module_dict_mismatches(module_path)
+    status = resolve_module_status(
+        total=total,
+        placeholders=placeholders,
+        conflicts=conflicts,
+        dict_mismatches=dict_mismatches,
+    )
 
     return {
         "total": total,
         "translated": translated,
         "placeholders": placeholders,
         "conflicts": conflicts,
+        "dict_mismatches": dict_mismatches,
         "status": status,
     }
 
@@ -148,6 +168,13 @@ def badge_text(stats: dict[str, Any]) -> str:
         if 2 <= n % 10 <= 4 and n not in (12, 13, 14):
             return f"{n} заглушки"
         return f"{n} заглушек"
+    if status == "ready_drift":
+        n = int(stats.get("dict_mismatches", 0))
+        if n == 1:
+            return "✓ готов · 1 расхожд."
+        if 2 <= n % 10 <= 4 and n not in (12, 13, 14):
+            return f"✓ готов · {n} расхожд."
+        return f"✓ готов · {n} расхожд."
     if status == "ready":
         return "✓ готов"
     return "не обработан"
@@ -155,20 +182,24 @@ def badge_text(stats: dict[str, Any]) -> str:
 
 def aggregate_project_stats(modules: dict[str, ModuleInfo]) -> dict[str, int]:
     """Суммарная статистика по всем модулям проекта."""
-    total = translated = placeholders = conflicts = 0
+    total = translated = placeholders = conflicts = dict_mismatches = 0
     module_count = len(modules)
-    with_placeholders = with_conflicts = ready = 0
+    with_placeholders = with_conflicts = ready = ready_drift = 0
     for info in modules.values():
         stats = info.stats or {}
         total += int(stats.get("total", 0))
         translated += int(stats.get("translated", 0))
         placeholders += int(stats.get("placeholders", 0))
         conflicts += int(stats.get("conflicts", 0))
+        dict_mismatches += int(stats.get("dict_mismatches", 0))
         status = stats.get("status", "unprocessed")
         if status == "placeholders":
             with_placeholders += 1
         elif status == "conflicts":
             with_conflicts += 1
+        elif status == "ready_drift":
+            ready_drift += 1
+            ready += 1
         elif status == "ready":
             ready += 1
     return {
@@ -177,9 +208,11 @@ def aggregate_project_stats(modules: dict[str, ModuleInfo]) -> dict[str, int]:
         "translated": translated,
         "placeholders": placeholders,
         "conflicts": conflicts,
+        "dict_mismatches": dict_mismatches,
         "with_placeholders": with_placeholders,
         "with_conflicts": with_conflicts,
         "ready_modules": ready,
+        "ready_drift_modules": ready_drift,
     }
 
 

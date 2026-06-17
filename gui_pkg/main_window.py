@@ -32,6 +32,11 @@ from PyQt6.QtWidgets import (
 from gui_pkg.backup import backup_module_values_ru, backup_modules_values_ru
 from gui_pkg.confirm import confirm_dangerous_action
 from gui_pkg.faq import show_faq
+from gui_pkg.fill_module_dialog import (
+    FillModuleDialog,
+    FillModuleOptions,
+    build_fill_module_args,
+)
 from gui_pkg.module_align import (
     collect_module_dict_mismatches,
     updates_for_sources,
@@ -55,6 +60,7 @@ from gui_pkg.config import (
 from gui_pkg.conflicts_panel import ConflictsPanel
 from gui_pkg.module_sidebar import ModuleSidebar
 from gui_pkg.dictionary_panel import DictionaryPanel
+from gui_pkg.dictionary_search_dialog import DictionarySearchDialog
 from gui_pkg.translate_panel import TranslatePanel
 from gui_pkg.layout_panel import LayoutPanel
 from gui_pkg.placeholder_editor import apply_placeholder_translations
@@ -218,11 +224,13 @@ class MainWindow(QMainWindow):
             get_root=self._current_root,
             get_current_module=self._current_module,
             get_module_count=lambda: len(self._modules),
-            on_collect=self._quick_collect,
             on_run_fill=self._run_fill,
+            on_dict_placeholders_json=self._quick_dict_placeholders_json,
             parent=self,
         )
         self._action_buttons.append(self._translate_panel.run_fill_button)
+        if hasattr(self._translate_panel, "dict_placeholders_json_button"):
+            self._action_buttons.append(self._translate_panel.dict_placeholders_json_button)
         self._layout_panel = LayoutPanel(
             get_root=self._current_root,
             get_current_module=self._current_module,
@@ -257,6 +265,7 @@ class MainWindow(QMainWindow):
         self._action_buttons.extend(self._conflicts_panel.toolbar_buttons[1:])
         self._dictionary_panel = DictionaryPanel(runner=self._runner, theme=self._theme)
         self._dictionary_panel.merge_requested.connect(self._on_pending_merge_requested)
+        self._dictionary_panel.search_requested.connect(self._open_dictionary_search)
         self._tabs.addTab(self._dictionary_panel, "Словарь")
         self._tabs.addTab(self._build_log_tab(), "Лог")
         self._tabs.currentChanged.connect(self._on_tab_changed)
@@ -337,7 +346,7 @@ class MainWindow(QMainWindow):
 
         layout.addWidget(self._translate_panel)
 
-        maint_label = QLabel("СЛОВАРЬ И LAYOUT")
+        maint_label = QLabel("БЫСТРЫЕ ДЕЙСТВИЯ")
         maint_label.setObjectName("sectionLabel")
         layout.addWidget(maint_label)
         quick = QGroupBox()
@@ -345,15 +354,16 @@ class MainWindow(QMainWindow):
         self._quick_grid.setSpacing(8)
         actions: list[tuple[str, str, object, bool]] = [
             (
-                "Добавить в словарь пропущенные строки заглушкой « » (режим ensure-dictionary)",
+                "Добавить в словарь пропущенные строки с заглушкой « »",
                 "Заглушки\nв словарь",
                 self._quick_placeholders,
                 True,
             ),
             (
-                "Собрать общий словарь из уже переведённых values-ru всех модулей",
-                "Collect\nAPK",
-                self._quick_collect,
+                "Добавить пропуски только в JSON-словарь, APK не меняется "
+                "(collect --add-missing-placeholders; область — переключатель «Модули» выше)",
+                "Заглушки\nтолько JSON",
+                self._quick_dict_placeholders_json,
                 False,
             ),
             (
@@ -369,7 +379,7 @@ class MainWindow(QMainWindow):
                 False,
             ),
             ("Поиск хардкода", "Скан\nlayout", self._quick_layout_scan, False),
-            ("Хардкод → strings", "В\nstrings", self._quick_layout_inject, False),
+            ("Перенести хардкод в strings", "В\nstrings", self._quick_layout_inject, False),
         ]
         self._quick_buttons = []
         for full_label, short_label, handler, primary in actions:
@@ -426,6 +436,11 @@ class MainWindow(QMainWindow):
         dict_form.addWidget(dict_hint)
 
         util_row = QHBoxLayout()
+        btn_dict_search = QPushButton("Поиск в словаре…")
+        btn_dict_search.setToolTip("Поиск по исходнику, переводу и модулям с правкой JSON")
+        btn_dict_search.clicked.connect(self._open_dictionary_search)
+        self._action_buttons.append(btn_dict_search)
+
         btn_sort = QPushButton("Сортировать словарь")
         btn_sort.setToolTip("sort_translation_libraries.py")
         btn_sort.clicked.connect(self._quick_sort)
@@ -441,7 +456,7 @@ class MainWindow(QMainWindow):
         btn_fix.clicked.connect(self._quick_fix_dates)
         self._action_buttons.append(btn_fix)
 
-        for btn in (btn_sort, btn_audit, btn_fix):
+        for btn in (btn_dict_search, btn_sort, btn_audit, btn_fix):
             util_row.addWidget(btn)
         util_row.addStretch()
         dict_form.addLayout(util_row)
@@ -568,6 +583,20 @@ class MainWindow(QMainWindow):
 
     def _show_faq(self) -> None:
         show_faq(self)
+
+    def _open_dictionary_search(self) -> None:
+        dlg = DictionarySearchDialog(
+            project_root=self._current_root(),
+            theme=self._theme,
+            on_saved=self._on_dictionary_search_saved,
+            parent=self,
+        )
+        dlg.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
+        dlg.show()
+
+    def _on_dictionary_search_saved(self) -> None:
+        if hasattr(self, "_dictionary_panel"):
+            self._dictionary_panel.reload()
 
     def _on_theme_changed(self) -> None:
         self._theme = self._theme_mgr.current
@@ -751,11 +780,17 @@ class MainWindow(QMainWindow):
         translated = agg["translated"]
         pct = int(round(100 * translated / total)) if total else 0
         self._project_progress.setValue(pct)
+        drift_note = ""
+        if agg.get("ready_drift_modules", 0) > 0:
+            drift_note = (
+                f" ({agg['ready_drift_modules']} с расхождениями values-ru↔словарь, "
+                f"всего {agg['dict_mismatches']})"
+            )
         self._project_summary.setText(
             f"<b>Проект:</b> {agg['modules']} модулей · "
             f"переведено {translated}/{total} ({pct}%) · "
             f"заглушек {agg['placeholders']} · конфликтов в словаре {agg['conflicts']} · "
-            f"готовых модулей {agg['ready_modules']}"
+            f"готовых модулей {agg['ready_modules']}{drift_note}"
         )
 
     def _update_list_item(self, name: str) -> None:
@@ -849,8 +884,8 @@ class MainWindow(QMainWindow):
         if not mismatches:
             QMessageBox.information(
                 self,
-                "APK ↔ словарь",
-                "Расхождений нет: APK совпадает со словарём или словарь не содержит переводов.",
+                "Подстановка из словаря",
+                "Расхождений нет: values-ru совпадает со словарём или в словаре нет перевода.",
             )
             return
         backup_module_values_ru(info.path)
@@ -864,23 +899,37 @@ class MainWindow(QMainWindow):
         dlg.exec()
 
     def _fill_single_module(self, info: ModuleInfo) -> None:
-        if not confirm_dangerous_action(
-            self,
-            title="Перевести модуль",
-            summary=f"Запустить fill для «{info.display}»?",
-            details="Переводы из словаря будут записаны в values-ru этого модуля.",
-        ):
-            return
-        backup_module_values_ru(info.path)
         panel = self._translate_panel
-        if not panel:
+        defaults = (
+            FillModuleOptions.from_translate_panel(panel)
+            if panel
+            else FillModuleOptions()
+        )
+        dlg = FillModuleDialog(info, defaults=defaults, parent=self)
+        if dlg.exec() != FillModuleDialog.DialogCode.Accepted:
             return
-        saved_scope = panel.set_scope_single_module()
-        if self._module_sidebar:
-            self._module_sidebar.set_current_module(info.name)
-        self._run_fill()
-        if saved_scope:
-            panel.restore_scope_all()
+        opts = dlg.options()
+        if not opts.no_overwrite:
+            if not confirm_dangerous_action(
+                self,
+                title="Перевести модуль",
+                summary=f"Запустить fill для «{info.display}» без «Не трогать готовые строки»?",
+                details="Уже переведённые строки в values-ru могут быть перезаписаны из словаря.",
+            ):
+                return
+        backup_module_values_ru(info.path)
+        args = build_fill_module_args(info.path, opts)
+        self._pending_refresh_after_cmd = True
+        label = "fill"
+        if opts.auto_collect:
+            collect_args = self._build_collect_args(module_path=info.path)
+            if not collect_args:
+                return
+            self._runner.enqueue(args, label)
+            self._runner.enqueue(collect_args, "collect --track both")
+        else:
+            self._runner.run_single(args, label)
+        self._show_log_tab()
 
     def _on_module_context_menu(self, pos, item: QListWidgetItem | None = None) -> None:
         if item is None:
@@ -894,8 +943,8 @@ class MainWindow(QMainWindow):
         self._module_list.setCurrentItem(item)
         menu = QMenu(self)
         act_placeholders = menu.addAction("Открыть заглушки")
-        act_fill = menu.addAction("Перевести этот модуль")
-        act_align = menu.addAction("APK ↔ словарь…")
+        act_fill = menu.addAction("Перевести модуль…")
+        act_align = menu.addAction("Подставить из словаря в APK…")
         menu.addSeparator()
         act_values = menu.addAction("Открыть values")
         act_values_ru = menu.addAction("Открыть values-ru")
@@ -1067,6 +1116,43 @@ class MainWindow(QMainWindow):
         if info:
             self._refresh_module_stats(info)
 
+    def _build_collect_args(
+        self,
+        *,
+        add_missing_placeholders: bool = False,
+        module_path: Path | None = None,
+    ) -> list[str] | None:
+        root = self._current_root()
+        if root is None:
+            QMessageBox.warning(self, "collect", "Укажите папку проекта.")
+            return None
+        collect_root = module_path if module_path is not None else root
+        args = [
+            str(LIBRARY_DIR / "collect_translation_library_ru.py"),
+            "--root",
+            str(collect_root),
+            "--track",
+            "both",
+            "--resolutions-en",
+            str(RESOLUTIONS_EN),
+            "--resolutions-zh",
+            str(RESOLUTIONS_ZH),
+        ]
+        if add_missing_placeholders:
+            args.append("--add-missing-placeholders")
+        return args
+
+    def _collect_scope_label(self) -> tuple[str, Path | None]:
+        """Подпись области и путь для collect (--root = модуль или вся папка)."""
+        panel = self._translate_panel
+        if panel and not panel.scope_is_all_modules():
+            info = self._current_module()
+            if not info:
+                return "", None
+            return f"модуля «{info.display}»", info.path
+        n_mod = len(self._modules)
+        return f"всех {n_mod} модулей", None
+
     def _run_fill(self) -> None:
         panel = self._translate_panel
         if not panel:
@@ -1079,25 +1165,57 @@ class MainWindow(QMainWindow):
                 details="Уже переведённые строки в APK могут быть перезаписаны из словаря.",
             ):
                 return
+        if panel.wants_dictionary_collect_chain():
+            root = self._current_root()
+            if root is None:
+                QMessageBox.warning(self, "fill", "Укажите папку проекта.")
+                return
+            scope, module_path = self._collect_scope_label()
+            if panel.scope_is_all_modules() is False and module_path is None:
+                QMessageBox.warning(
+                    self,
+                    "Словарь",
+                    "Выберите модуль слева или включите «Все в папке».",
+                )
+                return
+            collect_note = (
+                ""
+                if module_path is None
+                else "\n3. Collect по выбранному модулю; остальные модули в словарь не сканируются."
+            )
+            if not confirm_dangerous_action(
+                self,
+                title="Словарь из APK",
+                summary=f"Заглушки + collect для {scope}?",
+                details=(
+                    "1. Дополнит словарь пропущенными строками (« ») и обновит values-ru.\n"
+                    "2. Соберёт готовые пары из APK в общий словарь и отчёты конфликтов."
+                    f"{collect_note}"
+                ),
+            ):
+                return
         args = panel.build_fill_args(parent=self)
         if not args:
             return
         self._pending_refresh_after_cmd = True
         label = "fill"
+        if panel.wants_dictionary_collect_chain():
+            scope, module_path = self._collect_scope_label()
+            if panel.scope_is_all_modules() is False and module_path is None:
+                return
+            collect_args = self._build_collect_args(module_path=module_path)
+            if not collect_args:
+                return
+            self._runner.enqueue(args, label)
+            self._runner.enqueue(collect_args, "collect --track both")
+            self._show_log_tab()
+            return
         if panel.wants_auto_collect():
             root = self._current_root()
             if root:
-                collect_args = [
-                    str(LIBRARY_DIR / "collect_translation_library_ru.py"),
-                    "--root",
-                    str(root),
-                    "--track",
-                    "both",
-                    "--resolutions-en",
-                    str(RESOLUTIONS_EN),
-                    "--resolutions-zh",
-                    str(RESOLUTIONS_ZH),
-                ]
+                collect_args = self._build_collect_args()
+                if not collect_args:
+                    return
                 self._runner.enqueue(args, label)
                 self._runner.enqueue(collect_args, "collect --track both")
                 self._show_log_tab()
@@ -1105,43 +1223,71 @@ class MainWindow(QMainWindow):
         self._runner.run_single(args, label)
         self._show_log_tab()
 
-    def _quick_placeholders(self) -> None:
-        if self._translate_panel:
-            self._translate_panel.prepare_dictionary_task()
-        self._run_fill()
-
-    def _quick_ensure_dictionary(self) -> None:
-        self._quick_placeholders()
-
-    def _quick_collect(self) -> None:
-        root = self._current_root()
-        if not root:
-            QMessageBox.warning(self, "collect", "Укажите папку проекта.")
+    def _run_ensure_dictionary_only(self) -> None:
+        panel = self._translate_panel
+        if not panel:
             return
-        n_mod = len(self._modules)
+        scope, _ = self._collect_scope_label()
+        if not panel.scope_is_all_modules() and self._current_module() is None:
+            QMessageBox.warning(
+                self,
+                "Заглушки",
+                "Выберите модуль слева или включите «Все в папке».",
+            )
+            return
         if not confirm_dangerous_action(
             self,
-            title="Collect",
-            summary=f"Собрать словарь из APK {n_mod} модулей?",
+            title="Заглушки в словарь",
+            summary=f"ensure-dictionary для {scope or 'выбранной области'}?",
             details=(
-                "Обновится общий словарь и отчёты конфликтов.\n"
-                "Файлы values-ru в модулях не изменятся."
+                "Добавит пропуски заглушкой « » в словарь en/zh и обновит values-ru в APK.\n"
+                "Collect не запускается. Google не вызывается."
             ),
         ):
             return
-        args = [
-            str(LIBRARY_DIR / "collect_translation_library_ru.py"),
-            "--root",
-            str(root),
-            "--track",
-            "both",
-            "--resolutions-en",
-            str(RESOLUTIONS_EN),
-            "--resolutions-zh",
-            str(RESOLUTIONS_ZH),
-        ]
+        args = panel.build_ensure_dictionary_args(parent=self)
+        if not args:
+            return
         self._pending_refresh_after_cmd = True
-        self._runner.run_single(args, "collect")
+        self._runner.run_single(args, "fill ensure-dictionary")
+        self._show_log_tab()
+
+    def _quick_placeholders(self) -> None:
+        self._run_ensure_dictionary_only()
+
+    def _quick_dict_placeholders_json(self) -> None:
+        panel = self._translate_panel
+        if self._current_root() is None:
+            QMessageBox.warning(self, "Словарь", "Укажите папку проекта.")
+            return
+        scope, module_path = self._collect_scope_label()
+        if panel and not panel.scope_is_all_modules() and module_path is None:
+            QMessageBox.warning(
+                self,
+                "Словарь",
+                "Выберите модуль слева или включите «Все в папке».",
+            )
+            return
+        if not confirm_dangerous_action(
+            self,
+            title="Заглушки только в словарь",
+            summary=f"Добавить пропуски в JSON для {scope}?",
+            details=(
+                "Запуск collect --add-missing-placeholders.\n"
+                "Файлы values-ru в модулях не изменяются.\n"
+                "Новые исходники из сканирования получат ru = « » в словаре en/zh."
+            ),
+        ):
+            return
+        args = self._build_collect_args(
+            add_missing_placeholders=True,
+            module_path=module_path,
+        )
+        if not args:
+            return
+        self._pending_refresh_after_cmd = True
+        label = "collect placeholders"
+        self._runner.run_single(args, label)
         self._show_log_tab()
 
     def _quick_sort(self) -> None:

@@ -259,12 +259,14 @@ class ConflictsPanel(QWidget):
             if n > 0:
                 info.stats["status"] = "conflicts"
             elif info.stats.get("status") == "conflicts":
-                if info.stats.get("placeholders", 0) > 0:
-                    info.stats["status"] = "placeholders"
-                elif info.stats.get("total", 0) > 0:
-                    info.stats["status"] = "ready"
-                else:
-                    info.stats["status"] = "unprocessed"
+                from gui_pkg.scanner import resolve_module_status
+
+                info.stats["status"] = resolve_module_status(
+                    total=int(info.stats.get("total", 0)),
+                    placeholders=int(info.stats.get("placeholders", 0)),
+                    conflicts=0,
+                    dict_mismatches=int(info.stats.get("dict_mismatches", 0)),
+                )
             self._update_list_item(name)
         current_name = self._get_current_module_name()
         if current_name:

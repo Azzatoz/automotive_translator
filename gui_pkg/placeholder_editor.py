@@ -338,9 +338,11 @@ def apply_placeholder_translations(
     module_path: Path,
     rows: list[PlaceholderRow],
     updates: dict[str, str],
+    *,
+    update_dictionary: bool = True,
 ) -> tuple[int, int, frozenset[str]]:
     """
-    Записать переводы в values-ru и словари.
+    Записать переводы в values-ru и при необходимости в словари.
     updates: row_id → новый ru.
     Возвращает (число строк в XML, число обновлённых ключей словаря, применённые row_id).
     """
@@ -376,6 +378,9 @@ def apply_placeholder_translations(
                 changed = True
         if changed:
             _write_resources_xml(ru_path, root)
+
+    if not update_dictionary:
+        return xml_count, 0, frozenset(applied)
 
     track_maps: dict[Track, dict[str, str]] = {
         "en": load_track_map(DICT_EN) if DICT_EN.is_file() else {},
