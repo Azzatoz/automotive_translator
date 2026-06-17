@@ -4,24 +4,24 @@
   "kind": "pending_no_ru",
   "string_map": {},
   "meta": {
-    "updated_at": "2026-06-11T13:48:59Z",
-    "source_root": "/media/devv/10949c9f-ce94-43f9-9784-be7b8cc34bc92/DeepalS07/Rest 4.1.1/Translated",
+    "updated_at": "2026-06-17T06:23:49Z",
+    "source_root": "/media/devv/10949c9f-ce94-43f9-9784-be7b8cc34bc92/DeepalN07/Debug 4.1.1/translated",
     "track": "zh-rCN",
     "modules_scanned": 20,
     "stats": {
       "modules_total": 20,
       "modules_with_values_ru": 20,
-      "occurrences": 14598,
-      "unique_sources": 9025,
-      "string_map_size": 16646,
+      "occurrences": 12728,
+      "unique_sources": 7921,
+      "string_map_size": 17602,
       "new_entries": 0,
       "new_translated_entries": 0,
       "placeholder_entries": 0,
       "pending_added": 0,
       "pending_promoted": 0,
-      "pending_removed": 116,
+      "pending_removed": 0,
       "missing_entries": 0,
-      "conflicts": 1320
+      "conflicts": 886
     },
     "pending_total": 0,
     "pending_empty": 0

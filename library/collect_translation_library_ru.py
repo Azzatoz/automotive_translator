@@ -44,6 +44,7 @@ if str(_LIB_DIR) not in sys.path:
     sys.path.insert(0, str(_LIB_DIR))
 
 from library_persist import PENDING_KIND, order_string_map  # noqa: E402
+from paths import RESOLUTIONS_EN, RESOLUTIONS_ZH  # noqa: E402
 from source_resolve import (  # noqa: E402
     PLACEHOLDER_RU,
     Track,
@@ -53,6 +54,7 @@ from source_resolve import (  # noqa: E402
     find_item_quantity,
     has_cjk,
     is_placeholder_ru,
+    is_preserved_dictionary_ru,
     looks_technical,
     module_values_en_coverage,
     ensure_placeholders_in_map,
@@ -98,6 +100,12 @@ class ScanStats:
     pending_added: int = 0
     pending_promoted: int = 0
     pending_removed: int = 0
+
+
+def _should_copy_src_as_ru(src: str, track: Track) -> bool:
+    from resolve_dictionary_placeholders import should_copy_source_as_ru
+
+    return should_copy_source_as_ru(src, track=track)
 
 
 def _should_skip_name(name: str) -> bool:
@@ -490,6 +498,12 @@ def build_library(
         else:
             ru_text = counter.most_common(1)[0][0]
         stats.translated_pairs += 1
+        tr: Track = occs[0].track if occs else "en"
+        if is_placeholder_ru(ru_text) and _should_copy_src_as_ru(src, tr):
+            ru_text = src
+        existing_ru = string_map.get(src)
+        if is_placeholder_ru(ru_text) and is_preserved_dictionary_ru(src, existing_ru):
+            continue
         if overwrite_library or src not in string_map:
             string_map[src] = ru_text
 
@@ -526,10 +540,12 @@ def _apply_missing_placeholders(
     string_map: dict[str, str],
     sources: Iterable[str],
     placeholder_ru: str,
+    *,
+    track: Track,
 ) -> int:
     """Заглушка для исходников APK без готового ru (новые и «битые» записи)."""
     return ensure_placeholders_in_map(
-        string_map, sources, placeholder_ru=placeholder_ru
+        string_map, sources, placeholder_ru=placeholder_ru, track=track
     )
 
 
@@ -671,6 +687,7 @@ def _run_track(
     placeholder_ru: str = " ",
     placeholder_conflicts: bool = True,
     overwrite_library: bool = True,
+    resolutions_path: Path | None = None,
 ) -> int:
     all_occurrences: list[StringOccurrence] = []
     ru_modules = 0
@@ -705,6 +722,7 @@ def _run_track(
             string_map,
             apk_sources,
             placeholder_ru,
+            track=track,
         )
         missing = _filter_missing_in_library(missing, string_map)
         if not quiet and stats.placeholder_entries:
@@ -730,6 +748,8 @@ def _run_track(
                 f"перенесено в основной: {stats.pending_promoted}, "
                 f"убрано (уже в APK): {stats.pending_removed}"
             )
+
+    _apply_resolutions(string_map, resolutions_path, quiet)
 
     track_label = "en" if track == "en" else "zh-rCN" 
     library_payload = {
@@ -905,14 +925,14 @@ def main() -> int:
     ap.add_argument(
         "--resolutions-en",
         type=Path,
-        default=None,
-        help="Ручные решения конфликтов en (chosen → string_map)",
+        default=RESOLUTIONS_EN,
+        help="Ручные решения конфликтов en (chosen → string_map, после голосования APK)",
     )
     ap.add_argument(
         "--resolutions-zh",
         type=Path,
-        default=None,
-        help="Ручные решения конфликтов zh (chosen → string_map)",
+        default=RESOLUTIONS_ZH,
+        help="Ручные решения конфликтов zh (chosen → string_map, после голосования APK)",
     )
     ap.add_argument(
         "--no-missing-file",
@@ -986,6 +1006,7 @@ def main() -> int:
                 placeholder_ru=args.placeholder_ru,
                 placeholder_conflicts=args.placeholder_conflicts,
                 overwrite_library=not args.no_overwrite_library,
+                resolutions_path=args.resolutions_en,
             )
         else:
             existing = _load_existing_for_track(
@@ -1008,6 +1029,7 @@ def main() -> int:
                 placeholder_ru=args.placeholder_ru,
                 placeholder_conflicts=args.placeholder_conflicts,
                 overwrite_library=not args.no_overwrite_library,
+                resolutions_path=args.resolutions_zh,
             )
 
     return 0

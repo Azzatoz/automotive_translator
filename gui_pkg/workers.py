@@ -23,10 +23,14 @@ class ModuleScanWorker(QThread):
                 pool.submit(scan_module, mod, conflicts_cache): mod for mod in self._modules
             }
             for fut in as_completed(futures):
+                if self.isInterruptionRequested():
+                    pool.shutdown(wait=False, cancel_futures=True)
+                    return
                 mod = futures[fut]
                 try:
                     stats = fut.result()
                 except Exception:
                     stats = scan_module(mod, conflicts_cache)
                 self.module_scanned.emit(mod.name, stats)
-        self.finished_scan.emit()
+        if not self.isInterruptionRequested():
+            self.finished_scan.emit()

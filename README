@@ -13,6 +13,10 @@ python3 gui.py
 
 GUI запускает скрипты через `QProcess` (без импорта их логики). Папка проекта — каталог с модулями `*_src` (например `Translated/`).
 
+**Вкладки:** Обзор (статистика, перевод, быстрые кнопки) · Действия (layout, обслуживание словаря) · Конфликты · Словарь (заглушки, pending, отчёт Google) · Лог.
+
+Код интерфейса разбит на панели в `gui_pkg/`: `translate_panel`, `layout_panel`, `dictionary_panel`, `conflicts_panel`, `module_sidebar`, `placeholders_dialog` — см. [roadmap.md](roadmap.md).
+
 ## Структура репозитория
 
 ```
@@ -131,16 +135,15 @@ python3 scripts/fill_values_ru_from_library.py \
 
 ### Обычный fill (словарь + Google)
 
-Сначала словарь, иначе Google Translate. Нужен `deep-translator` (см. `requirements/fill-values-ru.txt`).
+Сначала оба словаря (en + zh), затем Google Translate в **два прохода**: en→ru, потом zh→ru. Переключатель «язык в APK» в GUI не нужен. Нужен `deep-translator` (см. `requirements/fill-values-ru.txt`).
 
 ```bash
 python3 scripts/fill_values_ru_from_library.py \
-  --source-lang zh-CN \
   --root "/path/to/translated"
 ```
 
-`--source-lang en` — для модулей с английским в `values`.  
-`--no-lang-filter` — не отсекать «чужой» язык в `values` (осторожно на смешанных прошивках).
+Один проход или без фильтра языка (legacy): `--single-pass`, `--no-lang-filter`.  
+CLI `--source-lang en|zh-CN` — только при `--single-pass`.
 
 ## collect — обновить словари из APK
 
@@ -249,5 +252,7 @@ python3 functions/verify_total_functions_ru.py
 ```bash
 python3 layout/extract_layout_hardcode.py --root "/path/to/translated" --inject-values
 ```
+
+Режимы: отчёт (`--dry-run`), вынести в `strings.xml` (`--inject-values`), перевод inplace (`--translate-inplace`). В GUI — вкладка **Действия** (`layout_panel`).
 
 Подробнее — в [roadmap.md](roadmap.md).

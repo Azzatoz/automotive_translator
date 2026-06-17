@@ -1,17 +1,13 @@
 from __future__ import annotations
 
 import json
-import sys
 import time
-import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from gui_pkg.config import REPO_ROOT, TRACKS, TRANSLATABLE_XML
-
-sys.path.insert(0, str(REPO_ROOT / "library"))
-from source_resolve import is_placeholder_ru  # noqa: E402
+from gui_pkg.config import TRACKS
+from gui_pkg.placeholder_editor import module_translation_stats
 
 
 def display_module_name(folder_name: str) -> str:
@@ -117,24 +113,7 @@ def scan_module(
             "status": "unprocessed",
         }
 
-    total = 0
-    placeholders = 0
-    for xml_name in TRANSLATABLE_XML:
-        xml_path = values_ru / xml_name
-        if not xml_path.is_file():
-            continue
-        try:
-            root = ET.parse(xml_path).getroot()
-        except ET.ParseError:
-            continue
-        for el in root.iter():
-            if el.tag not in ("string", "item"):
-                continue
-            total += 1
-            if el.text is None or is_placeholder_ru(el.text):
-                placeholders += 1
-
-    translated = total - placeholders
+    total, translated, placeholders = module_translation_stats(module_path)
     if conflicts > 0:
         status = "conflicts"
     elif placeholders > 0:
@@ -172,6 +151,36 @@ def badge_text(stats: dict[str, Any]) -> str:
     if status == "ready":
         return "✓ готов"
     return "не обработан"
+
+
+def aggregate_project_stats(modules: dict[str, ModuleInfo]) -> dict[str, int]:
+    """Суммарная статистика по всем модулям проекта."""
+    total = translated = placeholders = conflicts = 0
+    module_count = len(modules)
+    with_placeholders = with_conflicts = ready = 0
+    for info in modules.values():
+        stats = info.stats or {}
+        total += int(stats.get("total", 0))
+        translated += int(stats.get("translated", 0))
+        placeholders += int(stats.get("placeholders", 0))
+        conflicts += int(stats.get("conflicts", 0))
+        status = stats.get("status", "unprocessed")
+        if status == "placeholders":
+            with_placeholders += 1
+        elif status == "conflicts":
+            with_conflicts += 1
+        elif status == "ready":
+            ready += 1
+    return {
+        "modules": module_count,
+        "total": total,
+        "translated": translated,
+        "placeholders": placeholders,
+        "conflicts": conflicts,
+        "with_placeholders": with_placeholders,
+        "with_conflicts": with_conflicts,
+        "ready_modules": ready,
+    }
 
 
 @dataclass

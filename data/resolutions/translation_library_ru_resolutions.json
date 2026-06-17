@@ -7183,8 +7183,8 @@
           "com_android_systemui__AndesSystemUI_src"
         ]
       },
-      "chosen": "Немой",
-      "note": "auto: большинство модулей (2)"
+      "chosen": "Без звука",
+      "note": "вручную: корректный UI, не «немой»"
     },
     "Nap Mode": {
       "variants": {

@@ -78,6 +78,54 @@ class SkipTranslation(Exception):
     """Исходник не на --source-lang: не переводить и не менять values-ru."""
 
 
+def _library_can_apply(
+    *,
+    string_map: dict[str, str],
+    variants: list[SourceVariant] | None,
+    values_en_first: bool,
+    source_text: str | None,
+    library_overwrite: bool,
+) -> bool:
+    """Есть ли применимый перевод в объединённом словаре (en+zh)."""
+    vlist = variants or []
+    if vlist:
+        if any_variant_in_merged_map(string_map, vlist, values_en_first=values_en_first):
+            return True
+        ru_hit, _ = lookup_ru_in_merged_map(string_map, vlist, values_en_first=values_en_first)
+        if ru_hit is not None:
+            return True
+    src = (source_text or "").strip()
+    if not src:
+        return False
+    ru = string_map.get(src)
+    if ru is None:
+        return False
+    return library_overwrite or is_real_translation(src, ru)
+
+
+def _resolve_fill_passes(
+    args: argparse.Namespace,
+) -> list[tuple[str, str, bool]]:
+    """
+    Проходы fill: (source_lang, метка для лога, lang_filter только для Google).
+    Только словарь — один проход без фильтра. Словарь+Google — en, затем zh-CN.
+    """
+    if args.ensure_dictionary:
+        return []
+    if getattr(args, "single_pass", False):
+        sl = args.source_lang or "zh-CN"
+        return [(sl, "", not args.no_lang_filter)]
+    if args.library_only or args.library_overwrite:
+        return [("en", "", False)]
+    if args.no_lang_filter:
+        sl = args.source_lang or "zh-CN"
+        return [(sl, "", False)]
+    return [
+        ("en", "en→ru", True),
+        ("zh-CN", "zh→ru", True),
+    ]
+
+
 def _default_library_for_source(source_lang: str) -> Path:
     sl = (source_lang or "zh-CN").lower().replace("_", "-")
     if sl.startswith("en"):
@@ -85,6 +133,7 @@ def _default_library_for_source(source_lang: str) -> Path:
     if sl.startswith("zh"):
         return DEFAULT_LIBRARY_ZH
     return DEFAULT_LIBRARY_ZH
+
 
 def _copy_as_is(text: str) -> bool:
     """Классы, ссылки @android:string, шаблоны — копировать без Google."""
@@ -316,7 +365,12 @@ def _load_checkpoint(path: Path) -> set[str]:
         return set()
 
 
-def _log_values_en_coverage(module_dir: Path) -> bool:
+def _log_values_en_coverage(
+    module_dir: Path,
+    *,
+    source_lang: str = "zh-CN",
+    lang_filter: bool = True,
+) -> bool:
     cov = module_values_en_coverage(module_dir)
     if cov.warning:
         print(f"[warn] {module_dir.name}: {cov.warning}", file=sys.stderr, flush=True)
@@ -328,6 +382,27 @@ def _log_values_en_coverage(module_dir: Path) -> bool:
             flush=True,
         )
     return cov.values_en_first
+
+
+def _hint_lang_skips(
+    module_dir: Path,
+    *,
+    source_lang: str,
+    lang_skip_n: int,
+    module_work: int,
+    values_en_first: bool,
+) -> None:
+    if lang_skip_n <= 0 or module_work > 0:
+        return
+    sl = (source_lang or "zh-CN").lower().replace("_", "-")
+    if sl.startswith("en"):
+        return  # ожидаемо: китайские строки — во втором проходе
+    if sl.startswith("zh"):
+        print(
+            f"[hint] {module_dir.name}: {lang_skip_n} строк пропущены в проходе zh "
+            "(латиница) — они должны были обработаться в проходе en.",
+            flush=True,
+        )
 
 
 def _save_checkpoint(path: Path, done_keys: set[str], meta: dict[str, Any]) -> None:
@@ -437,7 +512,14 @@ def _queue_translation(
     )
     if skip_for_translation_library(src):
         return False
-    if lang_filter and src and not _matches_source_lang(src, source_lang):
+    has_lib = _library_can_apply(
+        string_map=string_map,
+        variants=variants,
+        values_en_first=values_en_first,
+        source_text=source_text,
+        library_overwrite=library_overwrite,
+    )
+    if lang_filter and not has_lib and src and not _matches_source_lang(src, source_lang):
         return False
     if library_overwrite:
         if fvr._values_ru_never_override(resource_name):
@@ -655,7 +737,7 @@ def _fill_one_xml(
                 q = item.attrib.get("quantity", "")
                 ru_item = fvr._find_item_quantity(ru_node, q) if ru_node is not None else None
                 ni = ET.Element("item", item.attrib)
-                ni.text = (ru_item.text if ru_item else None) or item.text or ""
+                ni.text = (ru_item.text if ru_item is not None else None) or item.text or ""
                 new_pl.append(ni)
             merged_root.append(new_pl)
             for item in child.findall("item"):
@@ -1133,7 +1215,7 @@ def fill_module_ensure_dictionary(
     sync0 = report.stats.synced_to_dictionary
 
     merged_by_xml: dict[str, tuple[ET.Element, Path]] = {}
-    values_en_first = _log_values_en_coverage(module_dir)
+    values_en_first = _log_values_en_coverage(module_dir, lang_filter=False)
 
     for xml_name in xml_files:
         merged_root, ru_path = _fill_one_xml_ensure(
@@ -1220,7 +1302,9 @@ def fill_module(
     total_errors = 0
     changed_since_save = 0
     translated_total = 0
-    values_en_first = _log_values_en_coverage(module_dir)
+    values_en_first = _log_values_en_coverage(
+        module_dir, source_lang=source_lang, lang_filter=lang_filter
+    )
 
     def flush_all() -> None:
         nonlocal changed_since_save
@@ -1291,6 +1375,13 @@ def fill_module(
             f"[done] {module_dir.name}: библиотека {report.stats.library - stats_lib0}, "
             f"Google {report.stats.google - stats_google0}"
             + (f", другой язык (пропуск): {lang_skip_n}" if lang_skip_n else "")
+        )
+        _hint_lang_skips(
+            module_dir,
+            source_lang=source_lang,
+            lang_skip_n=lang_skip_n,
+            module_work=module_work,
+            values_en_first=values_en_first,
         )
 
     return 0 if total_errors == 0 else 2
@@ -1365,7 +1456,12 @@ def main() -> int:
     ap.add_argument(
         "--no-lang-filter",
         action="store_true",
-        help="Не пропускать строки, если язык текста в values не совпадает с --source-lang",
+        help="Один проход Google без фильтра по письменности (устаревший режим)",
+    )
+    ap.add_argument(
+        "--single-pass",
+        action="store_true",
+        help="Один проход с --source-lang (по умолчанию: en, затем zh-CN для Google)",
     )
     ap.add_argument(
         "--ensure-dictionary",
@@ -1492,10 +1588,23 @@ def main() -> int:
         )
 
     lang_filter = not args.no_lang_filter and not args.ensure_dictionary
-    if lang_filter:
+    fill_passes = _resolve_fill_passes(args)
+    if args.ensure_dictionary:
+        pass
+    elif len(fill_passes) > 1:
         print(
-            f"[info] фильтр языка: при --source-lang {args.source_lang} "
-            "чужие строки (латиница в zh / иероглифы в en) не переводятся",
+            "[info] режим «словарь + Google»: два прохода — сначала en, затем zh-CN; "
+            "словарь en+zh на каждом проходе",
+            flush=True,
+        )
+    elif fill_passes and not fill_passes[0][2]:
+        print(
+            "[info] режим «только словарь»: en+zh словари, без фильтра языка",
+            flush=True,
+        )
+    elif lang_filter and len(fill_passes) == 1:
+        print(
+            f"[info] один проход Google: --source-lang {fill_passes[0][0]}",
             flush=True,
         )
     print(
@@ -1525,24 +1634,27 @@ def main() -> int:
                 report=report,
             )
             continue
-        r = fill_module(
-            mod,
-            string_map=string_map,
-            source_lang=args.source_lang,
-            target_lang=args.target_lang,
-            tools_dir=args.tools_dir.resolve(),
-            report=report,
-            resume=not args.no_resume,
-            skip_existing=not args.no_skip_existing,
-            save_every=max(1, args.save_every),
-            translate_delay=max(0.0, args.delay),
-            library_only=args.library_only,
-            library_overwrite=args.library_overwrite,
-            lang_filter=lang_filter,
-            dry_run=args.dry_run,
-            xml_files=xml_files,
-        )
-        rc = max(rc, r)
+        for pass_source_lang, pass_label, pass_lang_filter in fill_passes:
+            if pass_label:
+                print(f"[info] проход Google: {pass_label}", flush=True)
+            r = fill_module(
+                mod,
+                string_map=string_map,
+                source_lang=pass_source_lang,
+                target_lang=args.target_lang,
+                tools_dir=args.tools_dir.resolve(),
+                report=report,
+                resume=not args.no_resume,
+                skip_existing=not args.no_skip_existing,
+                save_every=max(1, args.save_every),
+                translate_delay=max(0.0, args.delay),
+                library_only=args.library_only,
+                library_overwrite=args.library_overwrite,
+                lang_filter=pass_lang_filter,
+                dry_run=args.dry_run,
+                xml_files=xml_files,
+            )
+            rc = max(rc, r)
 
     write_report(
         args.report_output.resolve(),

@@ -31,6 +31,13 @@ TRACKS: list[tuple[str, Path, Path, Path]] = [
     ("zh-CN", CONFLICTS_ZH, DICT_ZH, RESOLUTIONS_ZH),
 ]
 
+# Индексы вкладок QTabWidget в MainWindow (порядок addTab)
+TAB_OVERVIEW = 0
+TAB_ACTIONS = 1
+TAB_CONFLICTS = 2
+TAB_PENDING = 3
+TAB_LOG = 4
+
 ROOT_PRESETS: list[tuple[str, Path]] = [
     ("../Translated", REPO_ROOT.parent / "Translated"),
     (
@@ -52,10 +59,17 @@ __all__ = [
     "LIBRARY_DIR",
     "REPO_ROOT",
     "REPORTS_DIR",
+    "RESOLUTIONS_EN",
+    "RESOLUTIONS_ZH",
     "ROOT_PRESETS",
     "SCRIPTS_DIR",
     "SETTINGS_APP",
     "SETTINGS_ORG",
+    "TAB_ACTIONS",
+    "TAB_CONFLICTS",
+    "TAB_LOG",
+    "TAB_OVERVIEW",
+    "TAB_PENDING",
     "TRACKS",
     "TRANSLATABLE_XML",
 ]

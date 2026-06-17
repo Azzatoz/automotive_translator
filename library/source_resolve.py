@@ -87,6 +87,34 @@ def is_real_translation(source: str, ru: str | None) -> bool:
     return True
 
 
+def is_preserved_dictionary_ru(source: str, ru: str | None) -> bool:
+    """Готовое значение в словаре: реальный перевод или copy-as-is (ru = source)."""
+    if is_real_translation(source, ru):
+        return True
+    src = (source or "").strip()
+    ru_s = (ru or "").strip()
+    return bool(src) and src == ru_s
+
+
+def _copy_source_as_ru_for_track(source: str, *, track: Track) -> bool:
+    from resolve_dictionary_placeholders import should_copy_source_as_ru
+
+    return should_copy_source_as_ru(source, track=track)
+
+
+def is_usable_library_ru(source: str, ru: str | None) -> bool:
+    """Значение из словаря можно записать в values-ru (перевод или copy-as-is)."""
+    src = (source or "").strip()
+    ru_s = (ru or "").strip()
+    if not src or not ru_s:
+        return False
+    if is_placeholder_ru(ru):
+        return False
+    if has_cjk(ru_s) and not has_cjk(src):
+        return False
+    return True
+
+
 def has_cjk(text: str) -> bool:
     return bool(CJK_RE.search(text))
 
@@ -713,6 +741,20 @@ def lookup_ru_in_track_maps(
     return None, None
 
 
+def lookup_library_ru_for_apply(
+    track_maps: dict[Track, dict[str, str]],
+    variants: list[SourceVariant],
+    *,
+    values_en_first: bool = False,
+) -> tuple[str | None, SourceVariant | None]:
+    """Поиск в словарях для записи в APK: перевод или copy-as-is (map13 → map13)."""
+    for v in sort_variants_for_lookup(variants, values_en_first=values_en_first):
+        ru = track_maps.get(v.track, {}).get(v.text)
+        if is_usable_library_ru(v.text, ru):
+            return ru, v
+    return None, None
+
+
 def lookup_ru_in_merged_map(
     merged_map: dict[str, str],
     variants: list[SourceVariant],
@@ -753,7 +795,12 @@ def register_placeholders_in_track_maps(
             continue
         m = track_maps.setdefault(v.track, {})
         cur = m.get(v.text)
-        if cur is not None and is_real_translation(v.text, cur):
+        if cur is not None and is_preserved_dictionary_ru(v.text, cur):
+            continue
+        if _copy_source_as_ru_for_track(v.text, track=v.track):
+            if m.get(v.text) != v.text:
+                m[v.text] = v.text
+                dirty.add(v.track)
             continue
         if m.get(v.text) != placeholder_ru:
             m[v.text] = placeholder_ru
@@ -766,6 +813,7 @@ def ensure_placeholders_in_map(
     sources: Iterable[str],
     *,
     placeholder_ru: str = PLACEHOLDER_RU,
+    track: Track = "en",
 ) -> int:
     """Проставить заглушку всем исходникам без готового перевода в string_map."""
     changed = 0
@@ -774,7 +822,12 @@ def ensure_placeholders_in_map(
         if not src or skip_for_translation_library(src) or looks_technical(src):
             continue
         cur = string_map.get(src)
-        if cur is not None and is_real_translation(src, cur):
+        if cur is not None and is_preserved_dictionary_ru(src, cur):
+            continue
+        if _copy_source_as_ru_for_track(src, track=track):
+            if string_map.get(src) != src:
+                string_map[src] = src
+                changed += 1
             continue
         if cur != placeholder_ru:
             string_map[src] = placeholder_ru
@@ -828,6 +881,14 @@ def ensure_ru_from_track_maps(
     )
     if ru is not None:
         return ru, set(), True
+    for v in variants:
+        if _copy_source_as_ru_for_track(v.text, track=v.track):
+            m = track_maps.setdefault(v.track, {})
+            dirty: set[Track] = set()
+            if m.get(v.text) != v.text:
+                m[v.text] = v.text
+                dirty.add(v.track)
+            return v.text, dirty, False
     dirty = register_placeholders_in_track_maps(
         track_maps, variants, placeholder_ru=placeholder_ru
     )

@@ -1,29 +1,26 @@
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import Any
 
-from PyQt6.QtCore import QSettings, QSize, Qt
-from PyQt6.QtGui import QResizeEvent, QShowEvent
+from PyQt6.QtCore import QSettings, QSize, Qt, QUrl
+from PyQt6.QtGui import QDesktopServices, QResizeEvent, QShowEvent
 from PyQt6.QtWidgets import (
     QApplication,
-    QButtonGroup,
-    QCheckBox,
     QComboBox,
     QFileDialog,
+    QFrame,
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
     QLabel,
-    QLineEdit,
     QListWidget,
     QListWidgetItem,
     QMainWindow,
+    QMenu,
     QMessageBox,
     QProgressBar,
     QPushButton,
-    QRadioButton,
     QScrollArea,
     QSplitter,
     QStatusBar,
@@ -32,27 +29,43 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from gui_pkg.backup import backup_module_values_ru, backup_modules_values_ru
+from gui_pkg.confirm import confirm_dangerous_action
 from gui_pkg.faq import show_faq
+from gui_pkg.module_align import (
+    collect_module_dict_mismatches,
+    updates_for_sources,
+)
+from gui_pkg.module_align_dialog import ModuleAlignDialog
+from gui_pkg.placeholders_dialog import PlaceholdersDialog
 from gui_pkg.config import (
-    LAYOUT_DIR,
     LIBRARY_DIR,
     REPO_ROOT,
+    RESOLUTIONS_EN,
+    RESOLUTIONS_ZH,
     ROOT_PRESETS,
     SCRIPTS_DIR,
     SETTINGS_APP,
     SETTINGS_ORG,
+    TAB_CONFLICTS,
+    TAB_LOG,
+    TAB_PENDING,
     TRACKS,
 )
+from gui_pkg.conflicts_panel import ConflictsPanel
+from gui_pkg.module_sidebar import ModuleSidebar
+from gui_pkg.dictionary_panel import DictionaryPanel
+from gui_pkg.translate_panel import TranslatePanel
+from gui_pkg.layout_panel import LayoutPanel
+from gui_pkg.placeholder_editor import apply_placeholder_translations
 from gui_pkg.process import ProcessController
 from gui_pkg.scanner import (
     ModuleInfo,
-    badge_text,
-    count_conflicts_for_module,
+    aggregate_project_stats,
     discover_modules,
     display_module_name,
     load_conflicts_cache,
     modules_in_conflict,
-    prune_conflicts_file,
     scan_module,
 )
 from gui_pkg.responsive import (
@@ -70,7 +83,7 @@ from gui_pkg.responsive import (
     title_bar_compact,
 )
 from gui_pkg.theme import ThemeManager
-from gui_pkg.widgets import ActionButton, ConflictEntryWidget, LogView, ModuleListRow, StatCard
+from gui_pkg.widgets import ActionButton, LogView, StatCard
 from gui_pkg.workers import ModuleScanWorker
 
 
@@ -97,18 +110,18 @@ class MainWindow(QMainWindow):
         self._stats_cards: list[StatCard] = []
         self._quick_grid: QGridLayout | None = None
         self._quick_buttons: list[ActionButton] = []
-        self._conflicts_toolbar_grid: QGridLayout | None = None
-        self._conflicts_toolbar_buttons: list[ActionButton] = []
+        self._conflicts_panel: ConflictsPanel | None = None
+        self._module_sidebar: ModuleSidebar | None = None
+        self._translate_panel: TranslatePanel | None = None
+        self._layout_panel: LayoutPanel | None = None
         self._btn_browse: QPushButton | None = None
         self._btn_reload: QPushButton | None = None
         self._modules: dict[str, ModuleInfo] = {}
-        self._module_rows: dict[str, tuple[QListWidgetItem, ModuleListRow]] = {}
         self._scan_worker: ModuleScanWorker | None = None
         self._stats_refresh_worker: ModuleScanWorker | None = None
-        self._conflict_widgets: list[ConflictEntryWidget] = []
+        self._pending_stats_modules: set[str] = set()
         self._pending_refresh_after_cmd = False
         self._refresh_modules_after_cmd = True
-        self._conflict_apply_pending: dict[str, set[str]] = {}
         self._action_buttons: list[QPushButton] = []
 
         self._runner = ProcessController(self)
@@ -120,6 +133,7 @@ class MainWindow(QMainWindow):
         self._build_ui()
         self._load_root_presets()
         self._restore_last_root()
+        self._refresh_google_module_filter()
 
     def _build_ui(self) -> None:
         central = QWidget()
@@ -186,20 +200,12 @@ class MainWindow(QMainWindow):
         sidebar_layout = QVBoxLayout(sidebar)
         sidebar_layout.setContentsMargins(0, 0, 0, 0)
         sidebar_layout.setSpacing(0)
-        sidebar_head = QWidget()
-        sidebar_head_layout = QVBoxLayout(sidebar_head)
-        sidebar_head_layout.setContentsMargins(14, 12, 14, 8)
-        modules_label = QLabel("МОДУЛИ")
-        modules_label.setObjectName("sectionLabel")
-        self._filter_edit = QLineEdit()
-        self._filter_edit.setPlaceholderText("Поиск…")
-        self._filter_edit.textChanged.connect(self._apply_filter)
-        sidebar_head_layout.addWidget(modules_label)
-        sidebar_head_layout.addWidget(self._filter_edit)
-        sidebar_layout.addWidget(sidebar_head)
-        self._module_list = QListWidget()
-        self._module_list.currentItemChanged.connect(self._on_module_selected)
-        sidebar_layout.addWidget(self._module_list)
+        self._module_sidebar = ModuleSidebar(theme=self._theme)
+        self._module_sidebar.module_selected.connect(self._on_sidebar_module_selected)
+        self._module_sidebar.module_double_clicked.connect(self._on_sidebar_module_double_clicked)
+        self._module_sidebar.context_menu_requested.connect(self._on_sidebar_context_menu)
+        sidebar_layout.addWidget(self._module_sidebar)
+        self._module_list = self._module_sidebar.list_widget
         splitter.addWidget(sidebar)
 
         content = QWidget()
@@ -208,11 +214,50 @@ class MainWindow(QMainWindow):
         content_layout = QVBoxLayout(content)
         content_layout.setContentsMargins(0, 0, 0, 0)
         content_layout.setSpacing(0)
-        self._init_translate_controls()
+        self._translate_panel = TranslatePanel(
+            get_root=self._current_root,
+            get_current_module=self._current_module,
+            get_module_count=lambda: len(self._modules),
+            on_collect=self._quick_collect,
+            on_run_fill=self._run_fill,
+            parent=self,
+        )
+        self._action_buttons.append(self._translate_panel.run_fill_button)
+        self._layout_panel = LayoutPanel(
+            get_root=self._current_root,
+            get_current_module=self._current_module,
+            scope_is_all_modules=lambda: (
+                self._translate_panel.scope_is_all_modules()
+                if self._translate_panel
+                else True
+            ),
+            parent=self,
+        )
+        self._layout_panel.run_button.clicked.connect(self._run_layout)
+        self._layout_panel.scan_button.clicked.connect(self._quick_layout_scan)
+        self._action_buttons.extend(
+            (self._layout_panel.run_button, self._layout_panel.scan_button)
+        )
         self._tabs = QTabWidget()
         self._tabs.addTab(self._build_overview_tab(), "Обзор")
         self._tabs.addTab(self._build_actions_tab(), "Действия")
-        self._tabs.addTab(self._build_conflicts_tab(), "Конфликты")
+        self._conflicts_panel = ConflictsPanel(
+            theme=self._theme,
+            runner=self._runner,
+            get_current_module_name=self._current_module_name,
+            get_modules=lambda: self._modules,
+            update_list_item=self._update_list_item,
+            update_overview=self._update_overview,
+            log_line=self._on_log_line,
+            on_apply_apk_sources=self._apply_sources_to_apk_modules,
+            on_init_conflicts=self._quick_init_conflicts,
+        )
+        self._conflicts_panel.commands_enqueued.connect(self._on_conflicts_commands_enqueued)
+        self._tabs.addTab(self._conflicts_panel, "Конфликты")
+        self._action_buttons.extend(self._conflicts_panel.toolbar_buttons[1:])
+        self._dictionary_panel = DictionaryPanel(runner=self._runner, theme=self._theme)
+        self._dictionary_panel.merge_requested.connect(self._on_pending_merge_requested)
+        self._tabs.addTab(self._dictionary_panel, "Словарь")
         self._tabs.addTab(self._build_log_tab(), "Лог")
         self._tabs.currentChanged.connect(self._on_tab_changed)
         content_layout.addWidget(self._tabs)
@@ -240,10 +285,24 @@ class MainWindow(QMainWindow):
     def _build_overview_tab(self) -> QWidget:
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
         w = QWidget()
         layout = QVBoxLayout(w)
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(12)
+
+        self._project_summary = QLabel("Проект: загрузите папку и нажмите «Обновить»")
+        self._project_summary.setObjectName("hintLabel")
+        self._project_summary.setWordWrap(True)
+        layout.addWidget(self._project_summary)
+
+        self._project_progress = QProgressBar()
+        self._project_progress.setFormat("Проект %p%")
+        layout.addWidget(self._project_progress)
+
+        mod_label = QLabel("ВЫБРАННЫЙ МОДУЛЬ")
+        mod_label.setObjectName("sectionLabel")
+        layout.addWidget(mod_label)
 
         self._stats_grid = QGridLayout()
         self._stats_grid.setSpacing(10)
@@ -276,7 +335,7 @@ class MainWindow(QMainWindow):
         self._module_title.setObjectName("moduleTitle")
         layout.addWidget(self._module_title)
 
-        layout.addWidget(self._translate_group)
+        layout.addWidget(self._translate_panel)
 
         maint_label = QLabel("СЛОВАРЬ И LAYOUT")
         maint_label.setObjectName("sectionLabel")
@@ -297,7 +356,6 @@ class MainWindow(QMainWindow):
                 self._quick_collect,
                 False,
             ),
-            ("Сортировать словари", "Сортир.", self._quick_sort, False),
             (
                 "Исправить в словарях шаблоны дат (月/年/日 → dd.MM.yyyy и плейсхолдеры)",
                 "Формат\nдат",
@@ -310,7 +368,6 @@ class MainWindow(QMainWindow):
                 self._quick_init_conflicts,
                 False,
             ),
-            ("Проверка словаря", "Аудит", self._quick_audit, False),
             ("Поиск хардкода", "Скан\nlayout", self._quick_layout_scan, False),
             ("Хардкод → strings", "В\nstrings", self._quick_layout_inject, False),
         ]
@@ -340,337 +397,60 @@ class MainWindow(QMainWindow):
         )
         return scroll
 
-    def _init_translate_controls(self) -> None:
-        """Панель перевода APK на вкладке «Обзор» (общие виджеты для fill/collect)."""
-        self._translate_group = QGroupBox("Быстрые действия — перевод")
-        root = QVBoxLayout(self._translate_group)
-        root.setSpacing(10)
-
-        task_row = QHBoxLayout()
-        task_row.addWidget(QLabel("Задача:"))
-        self._task_group = QButtonGroup(self)
-        self._rb_task_apk = QRadioButton("Перевести приложение (values-ru в APK)")
-        self._rb_task_dict = QRadioButton("Пополнить общий словарь")
-        self._rb_task_apk.setChecked(True)
-        self._task_group.addButton(self._rb_task_apk, 0)
-        self._task_group.addButton(self._rb_task_dict, 1)
-        task_row.addWidget(self._rb_task_apk)
-        task_row.addWidget(self._rb_task_dict)
-        task_row.addStretch()
-        root.addLayout(task_row)
-
-        scope_row = QHBoxLayout()
-        scope_row.addWidget(QLabel("Модули:"))
-        self._scope_group = QButtonGroup(self)
-        self._rb_scope_all = QRadioButton("Все в папке")
-        self._rb_scope_one = QRadioButton("Только выбранный")
-        self._rb_scope_all.setChecked(True)
-        self._scope_group.addButton(self._rb_scope_all, 0)
-        self._scope_group.addButton(self._rb_scope_one, 1)
-        scope_row.addWidget(self._rb_scope_all)
-        scope_row.addWidget(self._rb_scope_one)
-        scope_row.addStretch()
-        root.addLayout(scope_row)
-
-        self._scope_label = QLabel()
-        self._scope_label.setObjectName("hintLabel")
-        self._scope_label.setWordWrap(True)
-        root.addWidget(self._scope_label)
-        self._scope_group.buttonClicked.connect(lambda: self._update_scope_label())
-
-        self._apk_options = QWidget()
-        apk_layout = QVBoxLayout(self._apk_options)
-        apk_layout.setContentsMargins(0, 0, 0, 0)
-        apk_layout.setSpacing(8)
-
-        lang_row = QHBoxLayout()
-        lang_row.addWidget(QLabel("Язык в APK:"))
-        self._lang_group = QButtonGroup(self)
-        self._rb_zh = QRadioButton("Китайский")
-        self._rb_en = QRadioButton("Английский")
-        self._rb_zh.setChecked(True)
-        self._lang_group.addButton(self._rb_zh, 0)
-        self._lang_group.addButton(self._rb_en, 1)
-        lang_row.addWidget(self._rb_zh)
-        lang_row.addWidget(self._rb_en)
-        lang_row.addStretch()
-        apk_layout.addLayout(lang_row)
-
-        mode_row = QHBoxLayout()
-        mode_row.addWidget(QLabel("Режим:"))
-        self._mode_group = QButtonGroup(self)
-        self._rb_normal = QRadioButton("Словарь + Google")
-        self._rb_library_only = QRadioButton("Только словарь")
-        self._rb_ensure_dict = QRadioButton("Заглушки в словарь")
-        self._rb_normal.setChecked(True)
-        for i, rb in enumerate((self._rb_normal, self._rb_library_only, self._rb_ensure_dict)):
-            self._mode_group.addButton(rb, i)
-            mode_row.addWidget(rb)
-        mode_row.addStretch()
-        apk_layout.addLayout(mode_row)
-        self._rb_ensure_dict.setVisible(False)
-
-        opts_row = QHBoxLayout()
-        self._chk_no_overwrite = QCheckBox("Не трогать готовые строки")
-        self._chk_no_overwrite.setChecked(True)
-        self._chk_no_overwrite.setToolTip(
-            "Уже переведённые строки в values-ru не перезаписывать."
-        )
-        self._chk_dry_run = QCheckBox("Пробный запуск")
-        self._chk_strings_only = QCheckBox("Только strings.xml")
-        self._chk_auto_collect = QCheckBox("После — собрать словарь из APK")
-        self._chk_auto_collect.setChecked(False)
-        self._chk_auto_collect.setToolTip(
-            "Пересобрать общий словарь и отчёт конфликтов. "
-            "Для уже переведённого проекта обычно не нужно."
-        )
-        for chk in (
-            self._chk_no_overwrite,
-            self._chk_dry_run,
-            self._chk_strings_only,
-            self._chk_auto_collect,
-        ):
-            opts_row.addWidget(chk)
-        opts_row.addStretch()
-        apk_layout.addLayout(opts_row)
-
-        self._fill_mode_hint = QLabel()
-        self._fill_mode_hint.setObjectName("hintLabel")
-        self._fill_mode_hint.setWordWrap(True)
-        apk_layout.addWidget(self._fill_mode_hint)
-        self._mode_group.buttonClicked.connect(self._on_fill_mode_changed)
-        root.addWidget(self._apk_options)
-
-        self._dict_options = QWidget()
-        dict_layout = QVBoxLayout(self._dict_options)
-        dict_layout.setContentsMargins(0, 0, 0, 0)
-        self._dict_hint = QLabel(
-            "Добавляет в общий словарь пропущенные строки заглушкой « » и обновляет values-ru. "
-            "Не путать с переводом APK: Google не вызывается. "
-            "«Собрать из APK» — отдельная кнопка ниже; может показать конфликты между модулями."
-        )
-        self._dict_hint.setObjectName("hintLabel")
-        self._dict_hint.setWordWrap(True)
-        dict_layout.addWidget(self._dict_hint)
-        dict_btn_row = QHBoxLayout()
-        self._btn_dict_collect = QPushButton("Собрать словарь из APK")
-        self._btn_dict_collect.clicked.connect(self._quick_collect)
-        dict_btn_row.addWidget(self._btn_dict_collect)
-        dict_btn_row.addStretch()
-        dict_layout.addLayout(dict_btn_row)
-        self._dict_options.setVisible(False)
-        root.addWidget(self._dict_options)
-
-        self._btn_run_fill = QPushButton("Перевести APK")
-        self._btn_run_fill.setObjectName("primaryBtn")
-        self._btn_run_fill.clicked.connect(self._run_fill)
-        root.addWidget(self._btn_run_fill)
-        self._action_buttons.append(self._btn_run_fill)
-
-        self._task_group.buttonClicked.connect(self._on_task_changed)
-        self._on_task_changed()
-        self._on_fill_mode_changed()
-        self._update_scope_label()
-
     def _build_actions_tab(self) -> QWidget:
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
         w = QWidget()
         layout = QVBoxLayout(w)
         layout.setContentsMargins(16, 16, 16, 16)
         layout.setSpacing(14)
 
-        intro = QLabel(
-            "<b>Перевод values-ru</b> — на вкладке <b>Обзор</b> в блоке «Быстрые действия».<br>"
-            "Здесь — только <b>хардкод в layout</b>: вынести текст в strings.xml, "
-            "затем на Обзоре запустить «Только словарь»."
-        )
-        intro.setObjectName("hintLabel")
-        intro.setWordWrap(True)
-        intro.setTextFormat(Qt.TextFormat.RichText)
-        layout.addWidget(intro)
+        layout.addWidget(self._layout_panel)
 
-        layout_group = QGroupBox("Хардкод в layout-файлах")
-        layout_form = QVBoxLayout(layout_group)
-        layout_intro = QLabel(
-            "Ищет китайский/английский текст в res/layout. "
-            "Рекомендуемый путь: вынести в strings.xml → на Обзоре «Только словарь»."
-        )
-        layout_intro.setObjectName("hintLabel")
-        layout_intro.setWordWrap(True)
-        layout_form.addWidget(layout_intro)
+        # ── 2. Обслуживание словаря ───────────────────────────────────────
+        dict_group = QGroupBox("2.  Обслуживание словаря")
+        dict_form = QVBoxLayout(dict_group)
+        dict_form.setSpacing(10)
 
-        self._layout_mode_group = QButtonGroup(self)
-        self._rb_layout_report = QRadioButton("Найти и показать отчёт")
-        self._rb_layout_inject = QRadioButton("Вынести в strings.xml")
-        self._rb_layout_inplace = QRadioButton("Перевести прямо в layout (быстро, не рекомендуется)")
-        self._rb_layout_inject.setChecked(True)
-        for i, rb in enumerate(
-            (self._rb_layout_report, self._rb_layout_inject, self._rb_layout_inplace)
-        ):
-            self._layout_mode_group.addButton(rb, i)
-            layout_form.addWidget(rb)
-        self._chk_layout_dry_run = QCheckBox("Пробный запуск — ничего не записывать")
-        layout_form.addWidget(self._chk_layout_dry_run)
-        prefix_row = QHBoxLayout()
-        prefix_row.addWidget(QLabel("Префикс новых ключей:"))
-        self._layout_key_prefix = QLineEdit("hw")
-        self._layout_key_prefix.setMaximumWidth(120)
-        prefix_row.addWidget(self._layout_key_prefix)
-        prefix_row.addStretch()
-        layout_form.addLayout(prefix_row)
-        self._btn_run_layout = QPushButton("Обработать layout")
-        self._btn_run_layout.clicked.connect(self._run_layout)
-        layout_form.addWidget(self._btn_run_layout)
-        self._action_buttons.append(self._btn_run_layout)
-        layout.addWidget(layout_group)
+        dict_hint = QLabel(
+            "<b>Сортировать</b> — расставляет ключи A–Z, заглушки переносит в конец. "
+            "Запускайте после массовых правок JSON.<br>"
+            "<b>Аудит</b> — ищет подозрительные строки (Win→Победа, незакрытые теги). "
+            "Только отчёт, ничего не меняет.<br>"
+            "<b>Исправить даты</b> — заменяет «ММ месяц» на d.M.y и аналогичные шаблоны."
+        )
+        dict_hint.setObjectName("hintLabel")
+        dict_hint.setWordWrap(True)
+        dict_hint.setTextFormat(Qt.TextFormat.RichText)
+        dict_form.addWidget(dict_hint)
+
+        util_row = QHBoxLayout()
+        btn_sort = QPushButton("Сортировать словарь")
+        btn_sort.setToolTip("sort_translation_libraries.py")
+        btn_sort.clicked.connect(self._quick_sort)
+        self._action_buttons.append(btn_sort)
+
+        btn_audit = QPushButton("Аудит переводов")
+        btn_audit.setToolTip("audit_translation_library.py --min-severity medium")
+        btn_audit.clicked.connect(self._quick_audit)
+        self._action_buttons.append(btn_audit)
+
+        btn_fix = QPushButton("Исправить даты")
+        btn_fix.setToolTip("fix_library_date_formats.py")
+        btn_fix.clicked.connect(self._quick_fix_dates)
+        self._action_buttons.append(btn_fix)
+
+        for btn in (btn_sort, btn_audit, btn_fix):
+            util_row.addWidget(btn)
+        util_row.addStretch()
+        dict_form.addLayout(util_row)
+
+        layout.addWidget(dict_group)
 
         layout.addStretch()
         scroll.setWidget(w)
         return scroll
-
-    def _scope_is_all_modules(self) -> bool:
-        return self._rb_scope_all.isChecked()
-
-    def _is_apk_task(self) -> bool:
-        return self._rb_task_apk.isChecked()
-
-    def _update_scope_label(self) -> None:
-        root = self._current_root()
-        info = self._current_module()
-        if self._scope_is_all_modules():
-            if root:
-                n = len(self._modules)
-                self._scope_label.setText(f"Обработка: все модули ({n})")
-            else:
-                self._scope_label.setText("Укажите папку проекта вверху окна.")
-        elif info:
-            self._scope_label.setText(f"Обработка: {info.display}")
-        else:
-            self._scope_label.setText(
-                "Выберите модуль слева или переключитесь на «Все в папке»."
-            )
-
-    def _on_task_changed(self) -> None:
-        apk = self._is_apk_task()
-        self._apk_options.setVisible(apk)
-        self._dict_options.setVisible(not apk)
-        for chk in (self._chk_no_overwrite, self._chk_dry_run, self._chk_strings_only, self._chk_auto_collect):
-            chk.setVisible(apk)
-        self._translate_group.setTitle(
-            "Быстрые действия — перевод APK" if apk else "Быстрые действия — словарь"
-        )
-        self._btn_run_fill.setText("Перевести APK" if apk else "Дополнить словарь заглушками")
-        if apk and self._mode_group.checkedId() == 2:
-            self._rb_normal.setChecked(True)
-        self._on_fill_mode_changed()
-
-    def _on_fill_mode_changed(self) -> None:
-        if not self._is_apk_task():
-            self._fill_mode_hint.setText("")
-            return
-        mode_id = self._mode_group.checkedId()
-        hints = {
-            0: (
-                "Заполняет values-ru в APK: сначала из словаря, остальное — Google (нужен интернет)."
-            ),
-            1: (
-                "Подставляет в APK только то, что уже есть в словаре. "
-                "Google не вызывается — для доводки уже переведённого проекта."
-            ),
-        }
-        self._fill_mode_hint.setText(hints.get(mode_id, ""))
-
-    def _build_conflicts_tab(self) -> QWidget:
-        w = QWidget()
-        layout = QVBoxLayout(w)
-        layout.setContentsMargins(16, 16, 16, 16)
-        layout.setSpacing(10)
-
-        howto = QLabel(
-            "<b>Как это работает</b><br>"
-            "1. Выберите вариант перевода (радиокнопка) в каждом нужном конфликте.<br>"
-            "2. <b>Кликните по блоку</b>, чтобы выделить его (синяя рамка) — так помечаете, "
-            "что именно сохранить.<br>"
-            "3. «Сохранить выделенные» — только отмеченные блоки. "
-            "«Сохранить все на экране» — все видимые конфликты сразу."
-        )
-        howto.setObjectName("hintLabel")
-        howto.setWordWrap(True)
-        howto.setTextFormat(Qt.TextFormat.RichText)
-        layout.addWidget(howto)
-
-        self._conflicts_summary = QLabel()
-        self._conflicts_summary.setObjectName("hintLabel")
-        layout.addWidget(self._conflicts_summary)
-
-        self._chk_filter_module_conflicts = QCheckBox("Показывать только конфликты выбранного модуля")
-        self._chk_filter_module_conflicts.setChecked(True)
-        self._chk_filter_module_conflicts.stateChanged.connect(self._reload_conflicts_ui)
-        layout.addWidget(self._chk_filter_module_conflicts)
-
-        toolbar_box = QGroupBox()
-        self._conflicts_toolbar_grid = QGridLayout(toolbar_box)
-        self._conflicts_toolbar_grid.setSpacing(8)
-        conflict_actions: list[tuple[str, str, object, bool]] = [
-            ("Обновить список", "Обновить", self._reload_conflicts_ui, False),
-            (
-                "Подставить популярный вариант",
-                "Большинство",
-                self._quick_init_conflicts,
-                False,
-            ),
-            ("Выделить все", "Все", self._highlight_all_conflicts, False),
-            ("Снять выделение", "Снять", self._clear_conflict_highlights, False),
-            (
-                "Сохранить выделенные",
-                "Выделен.",
-                lambda: self._apply_conflicts(only_highlighted=True),
-                True,
-            ),
-            (
-                "Сохранить все на экране",
-                "Все на экране",
-                lambda: self._apply_conflicts(only_highlighted=False),
-                False,
-            ),
-        ]
-        self._conflicts_toolbar_buttons = []
-        for full_label, short_label, handler, primary in conflict_actions:
-            btn = ActionButton(full_label, short_label, primary=primary)
-            btn.clicked.connect(handler)  # type: ignore[arg-type]
-            self._conflicts_toolbar_buttons.append(btn)
-        btn_init = self._conflicts_toolbar_buttons[1]
-        btn_init.setToolTip(
-            "Для каждого конфликта выбрать перевод, который встречается в большинстве модулей"
-        )
-        self._btn_apply_marked_conflicts = self._conflicts_toolbar_buttons[4]
-        self._btn_apply_marked_conflicts.setToolTip("Записать в словарь только блоки с синей рамкой")
-        self._btn_apply_conflicts = self._conflicts_toolbar_buttons[5]
-        self._btn_apply_conflicts.setToolTip(
-            "Записать в словарь все конфликты, которые сейчас видны в списке ниже "
-            "(с выбранным вариантом перевода)"
-        )
-        layout.addWidget(toolbar_box)
-        relayout_action_grid(
-            self._conflicts_toolbar_grid,
-            self._conflicts_toolbar_buttons,
-            container_width=1200,
-            max_columns=3,
-        )
-
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        self._conflicts_container = QWidget()
-        self._conflicts_layout = QVBoxLayout(self._conflicts_container)
-        self._conflicts_layout.setSpacing(10)
-        self._conflicts_layout.setContentsMargins(0, 0, 0, 0)
-        self._conflicts_layout.addStretch()
-        scroll.setWidget(self._conflicts_container)
-        layout.addWidget(scroll)
-
-        self._action_buttons.extend(self._conflicts_toolbar_buttons[1:])
-        return w
 
     def _build_log_tab(self) -> QWidget:
         w = QWidget()
@@ -765,13 +545,8 @@ class MainWindow(QMainWindow):
                 container_width=content_w,
                 max_columns=4,
             )
-        if self._conflicts_toolbar_grid and self._conflicts_toolbar_buttons:
-            relayout_action_grid(
-                self._conflicts_toolbar_grid,
-                self._conflicts_toolbar_buttons,
-                container_width=content_w,
-                max_columns=3,
-            )
+        if self._conflicts_panel:
+            self._conflicts_panel.relayout_toolbar(content_w)
 
         compact = title_bar_compact(self.width())
         self._path_label.setVisible(not compact)
@@ -779,6 +554,14 @@ class MainWindow(QMainWindow):
             self._btn_browse.setText("Папка" if compact else "Сменить папку")
         if self._btn_reload:
             self._btn_reload.setText("↻" if compact else "Обновить")
+
+    def _on_conflicts_commands_enqueued(self) -> None:
+        self._pending_refresh_after_cmd = True
+        self._refresh_modules_after_cmd = False
+        self._show_log_tab()
+
+    def _show_log_tab(self) -> None:
+        self._tabs.setCurrentIndex(TAB_LOG)
 
     def _toggle_theme(self) -> None:
         self._theme_mgr.toggle()
@@ -794,8 +577,8 @@ class MainWindow(QMainWindow):
         self._btn_theme.setText(self._theme_mgr.toggle_button_icon())
         self._btn_theme.setToolTip(self._theme_mgr.toggle_button_tooltip())
         self._refresh_theme_styles()
-        if self._tabs.currentIndex() == 2:
-            self._reload_conflicts_ui()
+        if self._tabs.currentIndex() == TAB_CONFLICTS and self._conflicts_panel:
+            self._conflicts_panel.reload()
 
     def _refresh_theme_styles(self) -> None:
         self._app_title.setStyleSheet(self._theme.title_label_style())
@@ -810,8 +593,10 @@ class MainWindow(QMainWindow):
         ):
             card.apply_theme(self._theme)
         self._log_view.apply_theme(self._theme)
-        for widget in self._conflict_widgets:
-            widget.apply_theme(self._theme)
+        if self._conflicts_panel:
+            self._conflicts_panel.apply_theme(self._theme)
+        if self._module_sidebar:
+            self._module_sidebar.apply_theme(self._theme)
         self._refresh_module_selection_styles()
         info = self._current_module()
         if info:
@@ -875,8 +660,16 @@ class MainWindow(QMainWindow):
             self._settings.setValue("last_root", str(root))
 
     def _on_tab_changed(self, index: int) -> None:
-        if index == 2:
-            self._reload_conflicts_ui()
+        if index == TAB_CONFLICTS and self._conflicts_panel:
+            self._conflicts_panel.reload()
+        if index == TAB_PENDING and hasattr(self, "_dictionary_panel"):
+            self._dictionary_panel.reload()
+            self._refresh_google_module_filter()
+
+    def _refresh_google_module_filter(self) -> None:
+        if not self._module_sidebar or not hasattr(self, "_dictionary_panel"):
+            return
+        self._module_sidebar.set_google_modules(self._dictionary_panel.google_module_names)
 
     def _browse_root(self) -> None:
         start = str(self._current_root() or REPO_ROOT.parent)
@@ -893,33 +686,39 @@ class MainWindow(QMainWindow):
         self._settings.setValue("last_root", key)
         self._reload_modules()
 
+    def _stop_module_scan_workers(self) -> None:
+        if self._stats_refresh_worker and self._stats_refresh_worker.isRunning():
+            self._stats_refresh_worker.requestInterruption()
+            self._stats_refresh_worker.wait(2000)
+        self._stats_refresh_worker = None
+        self._pending_stats_modules.clear()
+        if self._scan_worker and self._scan_worker.isRunning():
+            self._scan_worker.requestInterruption()
+            self._scan_worker.wait(2000)
+
     def _reload_modules(self) -> None:
         root = self._current_root()
         if root is None:
             QMessageBox.warning(self, "Папка проекта", "Укажите существующую папку с модулями.")
             return
         self._settings.setValue("last_root", str(root))
+        selected_name = self._current_module_name()
+        self._stop_module_scan_workers()
         modules = discover_modules(root)
         self._modules.clear()
-        self._module_rows.clear()
-        self._module_list.clear()
         for mod in modules:
             info = ModuleInfo(path=mod, name=mod.name, display=display_module_name(mod.name))
             self._modules[mod.name] = info
-            item = QListWidgetItem()
-            item.setData(Qt.ItemDataRole.UserRole, mod.name)
-            item.setSizeHint(QSize(0, 48))
-            row = ModuleListRow(info.display, "…", "unprocessed", theme=self._theme)
-            self._module_list.addItem(item)
-            self._module_list.setItemWidget(item, row)
-            self._module_rows[mod.name] = (item, row)
 
         self._update_path_label()
-        self._update_scope_label()
+        if self._translate_panel:
+            self._translate_panel.update_scope_label()
+        if self._module_sidebar:
+            self._module_sidebar.set_modules(self._modules)
+        self._update_project_summary()
 
-        if self._scan_worker and self._scan_worker.isRunning():
-            self._scan_worker.terminate()
-            self._scan_worker.wait(1000)
+        if selected_name and self._module_sidebar:
+            self._module_sidebar.set_current_module(selected_name)
 
         self._scan_worker = ModuleScanWorker(modules, self)
         self._scan_worker.module_scanned.connect(self._on_module_scanned)
@@ -933,6 +732,7 @@ class MainWindow(QMainWindow):
             return
         info.stats = stats
         self._update_list_item(name)
+        self._update_project_summary()
         if self._current_module_name() == name:
             self._update_overview(info)
 
@@ -940,49 +740,36 @@ class MainWindow(QMainWindow):
         if not self._runner.is_running:
             self._status_label.setText("Готово")
         self._update_path_label()
-        self._apply_filter()
+        if self._module_sidebar:
+            self._module_sidebar.rebuild_list(preserve_selection=self._current_module_name())
+        self._update_project_summary()
         self._refresh_module_selection_styles()
 
+    def _update_project_summary(self) -> None:
+        agg = aggregate_project_stats(self._modules)
+        total = agg["total"]
+        translated = agg["translated"]
+        pct = int(round(100 * translated / total)) if total else 0
+        self._project_progress.setValue(pct)
+        self._project_summary.setText(
+            f"<b>Проект:</b> {agg['modules']} модулей · "
+            f"переведено {translated}/{total} ({pct}%) · "
+            f"заглушек {agg['placeholders']} · конфликтов в словаре {agg['conflicts']} · "
+            f"готовых модулей {agg['ready_modules']}"
+        )
+
     def _update_list_item(self, name: str) -> None:
-        info = self._modules.get(name)
-        row_data = self._module_rows.get(name)
-        if not info or not row_data:
-            return
-        item, row = row_data
-        stats = info.stats
-        badge = badge_text(stats) if stats else "…"
-        status = stats.get("status", "unprocessed")
-        selected = self._module_list.currentItem() is item
-        row.update_row(info.display, badge, status, selected=selected)
+        if self._module_sidebar:
+            self._module_sidebar.update_list_item(name)
 
     def _refresh_module_selection_styles(self) -> None:
-        current = self._current_module_name()
-        for name, (_item, row) in self._module_rows.items():
-            row.apply_theme(self._theme)
-            info = self._modules.get(name)
-            if not info:
-                continue
-            stats = info.stats or {}
-            badge = badge_text(stats) if stats else "…"
-            status = stats.get("status", "unprocessed")
-            row.update_row(info.display, badge, status, selected=(name == current))
-
-    def _apply_filter(self) -> None:
-        needle = self._filter_edit.text().strip().lower()
-        for i in range(self._module_list.count()):
-            item = self._module_list.item(i)
-            if not item:
-                continue
-            name = item.data(Qt.ItemDataRole.UserRole) or ""
-            info = self._modules.get(name)
-            hay = f"{name} {info.display if info else ''}".lower()
-            item.setHidden(bool(needle) and needle not in hay)
+        if self._module_sidebar:
+            self._module_sidebar.refresh_selection_styles()
 
     def _current_module_name(self) -> str | None:
-        item = self._module_list.currentItem()
-        if not item:
-            return None
-        return item.data(Qt.ItemDataRole.UserRole)
+        if self._module_sidebar:
+            return self._module_sidebar.current_module_name()
+        return None
 
     def _current_module(self) -> ModuleInfo | None:
         name = self._current_module_name()
@@ -990,17 +777,212 @@ class MainWindow(QMainWindow):
             return None
         return self._modules.get(name)
 
-    def _on_module_selected(self, current: QListWidgetItem | None, _prev: QListWidgetItem | None) -> None:
+    def _open_placeholders_dialog(self, info: ModuleInfo) -> None:
+        dlg = PlaceholdersDialog(
+            info,
+            theme=self._theme,
+            on_saved=self._refresh_module_stats,
+            find_next_module=self._find_next_module_with_placeholders,
+            parent=self,
+        )
+        while True:
+            result = dlg.exec()
+            next_info = dlg.take_next_module()
+            if next_info is None:
+                break
+            dlg = PlaceholdersDialog(
+                next_info,
+                theme=self._theme,
+                on_saved=self._refresh_module_stats,
+                find_next_module=self._find_next_module_with_placeholders,
+                parent=self,
+            )
+
+    def _find_next_module_with_placeholders(
+        self, after_name: str | None
+    ) -> ModuleInfo | None:
+        names = (
+            self._module_sidebar.sorted_module_names()
+            if self._module_sidebar
+            else list(self._modules.keys())
+        )
+        start = 0
+        if after_name and after_name in names:
+            start = names.index(after_name) + 1
+        for name in names[start:] + names[:start]:
+            if after_name and name == after_name:
+                continue
+            info = self._modules.get(name)
+            if not info:
+                continue
+            ph = int((info.stats or {}).get("placeholders", 0))
+            if ph > 0:
+                return info
+        return None
+
+    def _on_sidebar_module_selected(self, name: str) -> None:
         self._refresh_module_selection_styles()
-        if not current:
-            return
-        name = current.data(Qt.ItemDataRole.UserRole)
         info = self._modules.get(name)
         if info:
             self._update_overview(info)
-        self._update_scope_label()
-        if self._tabs.currentIndex() == 2:
-            self._reload_conflicts_ui()
+        if self._translate_panel:
+            self._translate_panel.update_scope_label()
+        if self._tabs.currentIndex() == TAB_CONFLICTS and self._conflicts_panel:
+            self._conflicts_panel.reload()
+
+    def _on_sidebar_module_double_clicked(self, name: str) -> None:
+        info = self._modules.get(name)
+        if info:
+            self._open_placeholders_dialog(info)
+
+    def _on_sidebar_context_menu(self, pos, item: QListWidgetItem) -> None:
+        self._on_module_context_menu(pos, item)
+
+    def _locale_values_dir(self, info: ModuleInfo) -> Path:
+        en = info.path / "res" / "values-en"
+        if en.is_dir():
+            return en
+        return info.path / "res" / "values"
+
+    def _open_module_align_dialog(self, info: ModuleInfo) -> None:
+        mismatches = collect_module_dict_mismatches(info.path)
+        if not mismatches:
+            QMessageBox.information(
+                self,
+                "APK ↔ словарь",
+                "Расхождений нет: APK совпадает со словарём или словарь не содержит переводов.",
+            )
+            return
+        backup_module_values_ru(info.path)
+        dlg = ModuleAlignDialog(
+            info,
+            mismatches,
+            theme=self._theme,
+            on_saved=self._refresh_module_stats,
+            parent=self,
+        )
+        dlg.exec()
+
+    def _fill_single_module(self, info: ModuleInfo) -> None:
+        if not confirm_dangerous_action(
+            self,
+            title="Перевести модуль",
+            summary=f"Запустить fill для «{info.display}»?",
+            details="Переводы из словаря будут записаны в values-ru этого модуля.",
+        ):
+            return
+        backup_module_values_ru(info.path)
+        panel = self._translate_panel
+        if not panel:
+            return
+        saved_scope = panel.set_scope_single_module()
+        if self._module_sidebar:
+            self._module_sidebar.set_current_module(info.name)
+        self._run_fill()
+        if saved_scope:
+            panel.restore_scope_all()
+
+    def _on_module_context_menu(self, pos, item: QListWidgetItem | None = None) -> None:
+        if item is None:
+            item = self._module_list.itemAt(pos)
+        if not item:
+            return
+        name = item.data(Qt.ItemDataRole.UserRole)
+        info = self._modules.get(name) if name else None
+        if not info:
+            return
+        self._module_list.setCurrentItem(item)
+        menu = QMenu(self)
+        act_placeholders = menu.addAction("Открыть заглушки")
+        act_fill = menu.addAction("Перевести этот модуль")
+        act_align = menu.addAction("APK ↔ словарь…")
+        menu.addSeparator()
+        act_values = menu.addAction("Открыть values")
+        act_values_ru = menu.addAction("Открыть values-ru")
+        act_explorer = menu.addAction("Открыть в проводнике")
+        chosen = menu.exec(self._module_list.mapToGlobal(pos))
+        if chosen == act_placeholders:
+            self._open_placeholders_dialog(info)
+        elif chosen == act_fill:
+            self._fill_single_module(info)
+        elif chosen == act_align:
+            self._open_module_align_dialog(info)
+        elif chosen == act_values:
+            self._open_path_in_explorer(self._locale_values_dir(info))
+        elif chosen == act_values_ru:
+            self._open_path_in_explorer(info.path / "res" / "values-ru")
+        elif chosen == act_explorer:
+            self._open_module_in_explorer(info)
+
+    def _open_path_in_explorer(self, path: Path) -> None:
+        resolved = path.resolve()
+        if not resolved.is_dir():
+            QMessageBox.warning(self, "Проводник", f"Папка не найдена:\n{resolved}")
+            return
+        if not QDesktopServices.openUrl(QUrl.fromLocalFile(str(resolved))):
+            QMessageBox.warning(self, "Проводник", f"Не удалось открыть:\n{resolved}")
+
+    def _open_module_in_explorer(self, info: ModuleInfo) -> None:
+        path = info.path.resolve()
+        if not path.is_dir():
+            QMessageBox.warning(
+                self,
+                "Проводник",
+                f"Папка модуля не найдена:\n{path}",
+            )
+            return
+        opened = QDesktopServices.openUrl(QUrl.fromLocalFile(str(path)))
+        if not opened:
+            QMessageBox.warning(
+                self,
+                "Проводник",
+                f"Не удалось открыть папку:\n{path}",
+            )
+
+    def _apply_module_stats(self, name: str, stats: dict) -> None:
+        target = self._modules.get(name)
+        if not target:
+            return
+        target.stats = stats
+        self._update_list_item(name)
+        if self._current_module_name() == name:
+            self._update_overview(target)
+
+    def _start_stats_refresh_worker(self, module_names: list[str]) -> None:
+        paths: list[Path] = []
+        for name in module_names:
+            info = self._modules.get(name)
+            if info:
+                paths.append(info.path)
+        if not paths:
+            return
+
+        worker = ModuleScanWorker(paths, self)
+        self._stats_refresh_worker = worker
+        pending = set(module_names)
+
+        def on_scanned(name: str, stats: dict) -> None:
+            if name in pending:
+                pending.discard(name)
+                self._apply_module_stats(name, stats)
+
+        def on_finished() -> None:
+            self._stats_refresh_worker = None
+            worker.deleteLater()
+            if self._pending_stats_modules:
+                names = sorted(self._pending_stats_modules)
+                self._pending_stats_modules.clear()
+                self._start_stats_refresh_worker(names)
+
+        worker.module_scanned.connect(on_scanned)
+        worker.finished.connect(on_finished)
+        worker.start()
+
+    def _refresh_module_stats(self, info: ModuleInfo) -> None:
+        if self._stats_refresh_worker and self._stats_refresh_worker.isRunning():
+            self._pending_stats_modules.add(info.name)
+            return
+        self._start_stats_refresh_worker([info.name])
 
     def _update_overview(self, info: ModuleInfo) -> None:
         stats = info.stats or scan_module(info.path)
@@ -1030,8 +1012,8 @@ class MainWindow(QMainWindow):
 
     def _on_cmd_finished(self, exit_code: int) -> None:
         finished_label = self._runner.current_label
-        if exit_code == 0:
-            self._on_apply_conflicts_step_finished(finished_label)
+        if exit_code == 0 and self._conflicts_panel:
+            self._conflicts_panel.on_apply_step_finished(finished_label)
 
         if not self._runner.is_running:
             self._set_commands_enabled(True)
@@ -1050,57 +1032,24 @@ class MainWindow(QMainWindow):
             self._pending_refresh_after_cmd = False
             reload_modules = self._refresh_modules_after_cmd
             self._refresh_modules_after_cmd = True
+            apk_sources: set[str] = set()
+            if self._conflicts_panel:
+                apk_sources = set(self._conflicts_panel.conflict_apply_apk_sources)
+                self._conflicts_panel.conflict_apply_apk_sources = set()
             if reload_modules:
-                self._refresh_current_module_stats()
                 self._reload_modules()
             else:
-                self._reload_conflicts_ui()
-                self._refresh_conflict_badges_from_cache()
+                if self._conflicts_panel:
+                    self._conflicts_panel.reload()
+                    self._conflicts_panel.refresh_badges_from_cache()
                 self._status_label.setText("Готово")
-                if self._tabs.currentIndex() == 3:
-                    self._tabs.setCurrentIndex(2)
-
-    def _on_apply_conflicts_step_finished(self, label: str) -> None:
-        prefix = "apply conflicts ("
-        if not label.startswith(prefix) or not label.endswith(")"):
-            return
-        track = label[len(prefix) : -1]
-        sources = self._conflict_apply_pending.pop(track, None)
-        if not sources:
-            return
-        for track_name, conflicts_path, _, _ in TRACKS:
-            if track_name != track:
-                continue
-            removed = prune_conflicts_file(conflicts_path, sources)
-            if removed:
-                self._log_view.append_line(
-                    f"[gui] из отчёта убрано конфликтов ({track_name}): {removed}",
-                    "stdout",
-                )
-            break
-        self._reload_conflicts_ui()
-        self._refresh_conflict_badges_from_cache()
-
-    def _refresh_conflict_badges_from_cache(self) -> None:
-        cache = load_conflicts_cache()
-        for name, info in self._modules.items():
-            if not info.stats:
-                info.stats = {}
-            n = count_conflicts_for_module(name, cache)
-            info.stats["conflicts"] = n
-            if n > 0:
-                info.stats["status"] = "conflicts"
-            elif info.stats.get("status") == "conflicts":
-                if info.stats.get("placeholders", 0) > 0:
-                    info.stats["status"] = "placeholders"
-                elif info.stats.get("total", 0) > 0:
-                    info.stats["status"] = "ready"
-                else:
-                    info.stats["status"] = "unprocessed"
-            self._update_list_item(name)
-        current = self._current_module()
-        if current:
-            self._update_overview(current)
+                if self._tabs.currentIndex() == TAB_LOG:
+                    self._tabs.setCurrentIndex(TAB_CONFLICTS)
+            if apk_sources:
+                self._apply_sources_to_apk_modules(apk_sources)
+            if hasattr(self, "_dictionary_panel"):
+                self._dictionary_panel.reload()
+                self._refresh_google_module_filter()
 
     def _on_status_text(self, text: str) -> None:
         self._status_label.setText(text)
@@ -1109,81 +1058,33 @@ class MainWindow(QMainWindow):
         self._log_view.append_line(line, stream)
 
     def _abort_command(self) -> None:
-        self._conflict_apply_pending.clear()
+        if self._conflicts_panel:
+            self._conflicts_panel.conflict_apply_pending.clear()
         self._runner.kill()
 
     def _refresh_current_module_stats(self) -> None:
         info = self._current_module()
-        if not info:
-            return
-        if self._stats_refresh_worker and self._stats_refresh_worker.isRunning():
-            return
-
-        worker = ModuleScanWorker([info.path], self)
-        self._stats_refresh_worker = worker
-        module_name = info.name
-
-        def on_scanned(name: str, stats: dict) -> None:
-            if name != module_name:
-                return
-            target = self._modules.get(name)
-            if not target:
-                return
-            target.stats = stats
-            self._update_list_item(name)
-            if self._current_module_name() == name:
-                self._update_overview(target)
-
-        worker.module_scanned.connect(on_scanned)
-        worker.finished.connect(worker.deleteLater)
-        worker.start()
-
-    def _build_fill_args(self) -> list[str] | None:
-        root = self._current_root()
-        if root is None:
-            QMessageBox.warning(self, "fill", "Укажите папку проекта.")
-            return None
-
-        args = [str(SCRIPTS_DIR / "fill_values_ru_from_library.py")]
-        mode_id = self._mode_group.checkedId()
-        if mode_id == 1:
-            args.append("--library-only")
-        elif mode_id == 2:
-            args.append("--ensure-dictionary")
-
-        if self._scope_is_all_modules():
-            args.extend(["--root", str(root)])
-        else:
-            info = self._current_module()
-            if not info:
-                QMessageBox.warning(
-                    self,
-                    "Перевод",
-                    "Выберите модуль слева или включите «Все модули в папке проекта».",
-                )
-                return None
-            args.extend(["-m", str(info.path)])
-
-        source_lang = "en" if self._rb_en.isChecked() else "zh-CN"
-        args.extend(["--source-lang", source_lang])
-
-        if self._chk_no_overwrite.isChecked():
-            args.append("--no-overwrite")
-        if self._chk_dry_run.isChecked():
-            args.append("--dry-run")
-        if self._chk_strings_only.isChecked():
-            args.append("--strings-only")
-        return args
+        if info:
+            self._refresh_module_stats(info)
 
     def _run_fill(self) -> None:
-        if not self._is_apk_task():
-            self._rb_ensure_dict.setChecked(True)
-        args = self._build_fill_args()
+        panel = self._translate_panel
+        if not panel:
+            return
+        if panel.needs_overwrite_warning():
+            if not confirm_dangerous_action(
+                self,
+                title="Перевести APK",
+                summary="Запустить fill без «Не трогать готовые строки»?",
+                details="Уже переведённые строки в APK могут быть перезаписаны из словаря.",
+            ):
+                return
+        args = panel.build_fill_args(parent=self)
         if not args:
             return
         self._pending_refresh_after_cmd = True
         label = "fill"
-        if self._chk_auto_collect.isChecked() and not self._chk_dry_run.isChecked():
+        if panel.wants_auto_collect():
             root = self._current_root()
             if root:
                 collect_args = [
@@ -1192,17 +1093,21 @@ class MainWindow(QMainWindow):
                     str(root),
                     "--track",
                     "both",
+                    "--resolutions-en",
+                    str(RESOLUTIONS_EN),
+                    "--resolutions-zh",
+                    str(RESOLUTIONS_ZH),
                 ]
                 self._runner.enqueue(args, label)
                 self._runner.enqueue(collect_args, "collect --track both")
-                self._tabs.setCurrentIndex(3)
+                self._show_log_tab()
                 return
         self._runner.run_single(args, label)
-        self._tabs.setCurrentIndex(3)
+        self._show_log_tab()
 
     def _quick_placeholders(self) -> None:
-        self._rb_task_dict.setChecked(True)
-        self._on_task_changed()
+        if self._translate_panel:
+            self._translate_panel.prepare_dictionary_task()
         self._run_fill()
 
     def _quick_ensure_dictionary(self) -> None:
@@ -1213,21 +1118,36 @@ class MainWindow(QMainWindow):
         if not root:
             QMessageBox.warning(self, "collect", "Укажите папку проекта.")
             return
+        n_mod = len(self._modules)
+        if not confirm_dangerous_action(
+            self,
+            title="Collect",
+            summary=f"Собрать словарь из APK {n_mod} модулей?",
+            details=(
+                "Обновится общий словарь и отчёты конфликтов.\n"
+                "Файлы values-ru в модулях не изменятся."
+            ),
+        ):
+            return
         args = [
             str(LIBRARY_DIR / "collect_translation_library_ru.py"),
             "--root",
             str(root),
             "--track",
             "both",
+            "--resolutions-en",
+            str(RESOLUTIONS_EN),
+            "--resolutions-zh",
+            str(RESOLUTIONS_ZH),
         ]
         self._pending_refresh_after_cmd = True
         self._runner.run_single(args, "collect")
-        self._tabs.setCurrentIndex(3)
+        self._show_log_tab()
 
     def _quick_sort(self) -> None:
         args = [str(SCRIPTS_DIR / "sort_translation_libraries.py")]
         self._runner.run_single(args, "sort")
-        self._tabs.setCurrentIndex(3)
+        self._show_log_tab()
 
     def _quick_audit(self) -> None:
         args = [
@@ -1236,79 +1156,47 @@ class MainWindow(QMainWindow):
             "medium",
         ]
         self._runner.run_single(args, "audit")
-        self._tabs.setCurrentIndex(3)
+        self._show_log_tab()
 
     def _quick_fix_dates(self) -> None:
         args = [str(LIBRARY_DIR / "fix_library_date_formats.py")]
         self._runner.run_single(args, "fix date formats")
-        self._tabs.setCurrentIndex(3)
-
-    def _build_layout_args(self, mode: str | None = None) -> list[str] | None:
-        root = self._current_root()
-        if root is None:
-            QMessageBox.warning(self, "layout extract", "Укажите папку проекта.")
-            return None
-
-        if mode is None:
-            mode_id = self._layout_mode_group.checkedId()
-            mode = ("report", "inject", "inplace")[max(0, mode_id)]
-
-        args = [str(LAYOUT_DIR / "extract_layout_hardcode.py")]
-        if mode == "inject":
-            args.append("--inject-values")
-        elif mode == "inplace":
-            args.append("--translate-inplace")
-
-        if self._scope_is_all_modules():
-            args.extend(["--root", str(root)])
-        else:
-            info = self._current_module()
-            if not info:
-                QMessageBox.warning(
-                    self,
-                    "Layout",
-                    "Выберите модуль слева или включите «Все модули в папке проекта».",
-                )
-                return None
-            args.extend(["-m", str(info.path)])
-
-        if self._chk_layout_dry_run.isChecked() or mode == "report":
-            args.append("--dry-run")
-
-        prefix = self._layout_key_prefix.text().strip()
-        if prefix:
-            args.extend(["--key-prefix", prefix])
-        return args
+        self._show_log_tab()
 
     def _run_layout(self) -> None:
-        args = self._build_layout_args()
+        panel = self._layout_panel
+        if not panel:
+            return
+        args = panel.build_args(parent=self)
         if not args:
             return
-        mode_id = self._layout_mode_group.checkedId()
-        labels = ("layout report", "layout inject", "layout inplace")
-        label = labels[max(0, mode_id)]
         self._pending_refresh_after_cmd = True
-        self._runner.run_single(args, label)
-        self._tabs.setCurrentIndex(3)
+        self._runner.run_single(args, panel.mode_label())
+        self._show_log_tab()
 
     def _quick_layout_scan(self) -> None:
-        self._rb_layout_report.setChecked(True)
-        args = self._build_layout_args(mode="report")
+        panel = self._layout_panel
+        if not panel:
+            return
+        panel.prepare_report()
+        args = panel.build_args(parent=self, mode="report")
         if not args:
             return
         self._pending_refresh_after_cmd = True
         self._runner.run_single(args, "layout scan")
-        self._tabs.setCurrentIndex(3)
+        self._show_log_tab()
 
     def _quick_layout_inject(self) -> None:
-        self._rb_layout_inject.setChecked(True)
-        self._chk_layout_dry_run.setChecked(False)
-        args = self._build_layout_args(mode="inject")
+        panel = self._layout_panel
+        if not panel:
+            return
+        panel.prepare_inject(dry_run=False)
+        args = panel.build_args(parent=self, mode="inject")
         if not args:
             return
         self._pending_refresh_after_cmd = True
         self._runner.run_single(args, "layout inject")
-        self._tabs.setCurrentIndex(3)
+        self._show_log_tab()
 
     def _quick_init_conflicts(self) -> None:
         cmds: list[tuple[list[str], str]] = []
@@ -1333,225 +1221,66 @@ class MainWindow(QMainWindow):
             return
         for args, label in cmds:
             self._runner.enqueue(args, label)
-        self._tabs.setCurrentIndex(3)
+        self._show_log_tab()
 
-    def _write_conflict_resolutions(
-        self,
-        resolutions_path: Path,
-        entries: dict[str, dict[str, Any]],
-        track: str,
-        *,
-        merge: bool,
-    ) -> None:
-        resolutions: dict[str, Any] = {}
-        if merge and resolutions_path.is_file():
-            try:
-                data = json.loads(resolutions_path.read_text(encoding="utf-8"))
-                raw = data.get("resolutions") or {}
-                if isinstance(raw, dict):
-                    resolutions = dict(raw)
-            except (OSError, json.JSONDecodeError):
-                pass
-        resolutions.update(entries)
-        payload = {
-            "schema_version": 1,
-            "resolutions": resolutions,
-            "meta": {"from_gui": True, "track": track},
-        }
-        resolutions_path.parent.mkdir(parents=True, exist_ok=True)
-        resolutions_path.write_text(
-            json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
-            encoding="utf-8",
-        )
-
-    def _clear_conflicts_layout(self) -> None:
-        while self._conflicts_layout.count() > 1:
-            item = self._conflicts_layout.takeAt(0)
-            w = item.widget()
-            if w:
-                w.deleteLater()
-        self._conflict_widgets.clear()
-
-    def _reload_conflicts_ui(self) -> None:
-        self._clear_conflicts_layout()
-        module_name = self._current_module_name() if self._chk_filter_module_conflicts.isChecked() else None
-
-        for track, conflicts_path, _, resolutions_path in TRACKS:
-            if not conflicts_path.is_file():
-                continue
-            try:
-                data = json.loads(conflicts_path.read_text(encoding="utf-8"))
-            except (OSError, json.JSONDecodeError):
-                continue
-            conflicts = data.get("conflicts") or []
-            resolutions_data: dict[str, Any] = {}
-            if resolutions_path.is_file():
-                try:
-                    resolutions_data = json.loads(resolutions_path.read_text(encoding="utf-8"))
-                except (OSError, json.JSONDecodeError):
-                    pass
-            res_map = resolutions_data.get("resolutions") or {}
-
-            for item in conflicts:
-                if module_name and module_name not in modules_in_conflict(item):
-                    continue
-                merged = dict(item)
+    def _module_names_for_sources(self, sources: set[str]) -> set[str]:
+        names: set[str] = set()
+        if not sources:
+            return names
+        cache = load_conflicts_cache()
+        for items in cache.values():
+            for item in items:
                 src = str(item.get("source") or "")
-                if src in res_map and isinstance(res_map[src], dict):
-                    chosen = res_map[src].get("chosen")
-                    if chosen:
-                        merged["chosen"] = chosen
-                widget = ConflictEntryWidget(track, merged, theme=self._theme)
-                widget.chosen_changed.connect(self._update_conflicts_summary)
-                widget.highlight_changed.connect(self._update_conflicts_summary)
-                self._conflict_widgets.append(widget)
-                self._conflicts_layout.insertWidget(self._conflicts_layout.count() - 1, widget)
+                if src in sources:
+                    names |= modules_in_conflict(item)
+        return names
 
-        if not self._conflict_widgets:
-            empty = QLabel("Конфликтов нет (или не найдены для выбранного модуля).")
-            empty.setObjectName("hintLabel")
-            empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            self._conflicts_layout.insertWidget(0, empty)
-
-        self._update_conflicts_summary()
-
-    def _count_ready_conflicts(self) -> tuple[int, int, int]:
-        """(с вариантом перевода, выделено, всего на экране)."""
-        total = len(self._conflict_widgets)
-        ready = sum(1 for w in self._conflict_widgets if w.get_chosen())
-        highlighted = sum(1 for w in self._conflict_widgets if w.is_highlighted())
-        return ready, highlighted, total
-
-    def _highlight_all_conflicts(self) -> None:
-        for widget in self._conflict_widgets:
-            widget.set_highlighted(True)
-        self._update_conflicts_summary()
-
-    def _clear_conflict_highlights(self) -> None:
-        for widget in self._conflict_widgets:
-            widget.set_highlighted(False)
-        self._update_conflicts_summary()
-
-    def _update_conflicts_summary(self) -> None:
-        ready, highlighted, total = self._count_ready_conflicts()
-        marked_ready = sum(
-            1 for w in self._conflict_widgets if w.is_highlighted() and w.get_chosen()
-        )
-        if total == 0:
-            self._conflicts_summary.setText("На экране нет конфликтов.")
-            self._btn_apply_conflicts.update_labels("Сохранить все на экране", "Все на экране")
-            self._btn_apply_marked_conflicts.update_labels("Сохранить выделенные", "Выделен.")
-            self._btn_apply_conflicts.setEnabled(False)
-            self._btn_apply_marked_conflicts.setEnabled(False)
+    def _apply_sources_to_apk_modules(self, sources: set[str]) -> None:
+        if not sources:
             return
-        self._btn_apply_conflicts.setEnabled(ready > 0)
-        self._btn_apply_marked_conflicts.setEnabled(marked_ready > 0)
-        if self._chk_filter_module_conflicts.isChecked():
-            scope = "только выбранного модуля"
-        else:
-            scope = "всего проекта"
-        self._conflicts_summary.setText(
-            f"На экране: {total} ({scope}). "
-            f"Выделено: {highlighted}. "
-            f"Готово к сохранению: {ready} (выделенных: {marked_ready})."
-        )
-        self._btn_apply_marked_conflicts.update_labels(
-            f"Сохранить выделенные ({marked_ready})",
-            f"Выделен.\n({marked_ready})",
-        )
-        self._btn_apply_conflicts.update_labels(
-            f"Сохранить все на экране ({ready})",
-            f"Все\n({ready})",
-        )
-
-    def _apply_conflicts(self, *, only_highlighted: bool) -> None:
-        if self._runner.is_running:
-            return
-
-        if only_highlighted:
-            widgets = [w for w in self._conflict_widgets if w.is_highlighted()]
-            if not widgets:
-                QMessageBox.information(
-                    self,
-                    "Конфликты",
-                    "Нет выделенных блоков.\n"
-                    "Кликните по нужным карточкам — они подсветятся синей рамкой.",
-                )
-                return
-        else:
-            widgets = list(self._conflict_widgets)
-
-        to_save = [w for w in widgets if w.get_chosen()]
-        if not to_save:
+        module_names = self._module_names_for_sources(sources)
+        if not module_names:
             QMessageBox.information(
                 self,
-                "Конфликты",
-                "У выбранных блоков не отмечен вариант перевода (радиокнопка).",
+                "APK",
+                "Не найдены модули для выбранных исходников.",
             )
             return
-
-        skipped = len(widgets) - len(to_save)
-        scope = "выделенных" if only_highlighted else "видимых на экране"
-        extra = ""
-        if skipped:
-            extra = f"\n\nБез варианта перевода и будут пропущены: {skipped}."
-        answer = QMessageBox.question(
-            self,
-            "Сохранить в словарь",
-            f"Записать в общий словарь {len(to_save)} решений из {scope} блоков?{extra}",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.Yes,
-        )
-        if answer != QMessageBox.StandardButton.Yes:
+        paths: list[Path] = []
+        for name in sorted(module_names):
+            info = self._modules.get(name)
+            if info:
+                paths.append(info.path)
+        if not paths:
             return
+        if not confirm_dangerous_action(
+            self,
+            title="Записать в APK",
+            summary=f"Применить {len(sources)} переводов к {len(paths)} модулям?",
+            details="Будет создан бэкап values-ru. Меняются только строки с выбранными исходниками.",
+        ):
+            return
+        backup_modules_values_ru(paths)
+        total = 0
+        from gui_pkg.placeholder_editor import collect_all_module_rows
 
-        by_track: dict[str, dict[str, dict[str, Any]]] = {t[0]: {} for t in TRACKS}
-
-        conflict_lookup: dict[str, dict[str, dict[str, Any]]] = {t[0]: {} for t in TRACKS}
-        for track, conflicts_path, _, _ in TRACKS:
-            if not conflicts_path.is_file():
+        for name in sorted(module_names):
+            info = self._modules.get(name)
+            if not info:
                 continue
-            try:
-                data = json.loads(conflicts_path.read_text(encoding="utf-8"))
-                for c in data.get("conflicts") or []:
-                    src = str(c.get("source") or "")
-                    if src:
-                        conflict_lookup[track][src] = c
-            except (OSError, json.JSONDecodeError):
-                pass
-
-        for widget in to_save:
-            chosen = widget.get_chosen()
-            src = widget.source
-            item: dict[str, Any] = {"chosen": chosen}
-            orig = conflict_lookup.get(widget.track, {}).get(src)
-            if orig and isinstance(orig.get("translations"), dict):
-                item["variants"] = orig["translations"]
-            by_track[widget.track][src] = item
-
-        cmds: list[tuple[list[str], str]] = []
-        for track, conflicts_path, library_path, resolutions_path in TRACKS:
-            entries = by_track.get(track) or {}
-            if not entries:
+            updates = updates_for_sources(info.path, sources)
+            if not updates:
                 continue
-            self._write_conflict_resolutions(resolutions_path, entries, track, merge=only_highlighted)
-            args = [
-                str(LIBRARY_DIR / "apply_translation_conflict_resolutions_ru.py"),
-                "--apply",
-                "--conflicts",
-                str(conflicts_path),
-                "--resolutions",
-                str(resolutions_path),
-                "--library",
-                str(library_path),
-            ]
-            cmds.append((args, f"apply conflicts ({track})"))
+            rows = collect_all_module_rows(info.path)
+            _, _, applied = apply_placeholder_translations(info.path, rows, updates)
+            total += len(applied)
+            self._refresh_module_stats(info)
+        QMessageBox.information(
+            self,
+            "APK",
+            f"Записано в APK: {total} строк в {len(paths)} модулях.",
+        )
 
+    def _on_pending_merge_requested(self) -> None:
         self._pending_refresh_after_cmd = True
-        self._refresh_modules_after_cmd = False
-        self._conflict_apply_pending = {
-            track: set(entries.keys()) for track, entries in by_track.items() if entries
-        }
-        for args, label in cmds:
-            self._runner.enqueue(args, label)
-        self._tabs.setCurrentIndex(3)
+        self._show_log_tab()
