@@ -43,7 +43,7 @@ _LIB_DIR = Path(__file__).resolve().parent
 if str(_LIB_DIR) not in sys.path:
     sys.path.insert(0, str(_LIB_DIR))
 
-from library_persist import PENDING_KIND, order_string_map  # noqa: E402
+from library_persist import PENDING_KIND, order_string_map, save_track_map  # noqa: E402
 from paths import RESOLUTIONS_EN, RESOLUTIONS_ZH  # noqa: E402
 from source_resolve import (  # noqa: E402
     PLACEHOLDER_RU,
@@ -55,6 +55,7 @@ from source_resolve import (  # noqa: E402
     has_cjk,
     is_placeholder_ru,
     is_preserved_dictionary_ru,
+    is_usable_library_ru,
     looks_technical,
     module_values_en_coverage,
     ensure_placeholders_in_map,
@@ -504,7 +505,16 @@ def build_library(
         existing_ru = string_map.get(src)
         if is_placeholder_ru(ru_text) and is_preserved_dictionary_ru(src, existing_ru):
             continue
-        if overwrite_library or src not in string_map:
+        if src not in string_map:
+            string_map[src] = ru_text
+        elif is_placeholder_ru(existing_ru) and is_usable_library_ru(src, ru_text):
+            string_map[src] = ru_text
+        elif overwrite_library:
+            if (
+                is_preserved_dictionary_ru(src, existing_ru)
+                and existing_ru != ru_text
+            ):
+                continue
             string_map[src] = ru_text
 
     missing: list[dict[str, Any]] = []
@@ -751,36 +761,31 @@ def _run_track(
 
     _apply_resolutions(string_map, resolutions_path, quiet)
 
-    track_label = "en" if track == "en" else "zh-rCN" 
-    library_payload = {
-        "schema_version": 2,
+    track_label = "en" if track == "en" else "zh-rCN"
+    library_meta = {
+        "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "source_root": str(root),
         "track": track_label,
-        "string_map": order_string_map(string_map),
-        "meta": {
-            "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "source_root": str(root),
-            "track": track_label,
-            "modules_scanned": len(modules),
-            "stats": {
-                "modules_total": stats.modules_total,
-                "modules_with_values_ru": stats.modules_with_values_ru,
-                "occurrences": stats.occurrences,
-                "unique_sources": stats.unique_sources,
-                "string_map_size": len(string_map),
-                "new_entries": len(string_map) - len(existing),
-                "new_translated_entries": size_after_translated - len(existing),
-                "placeholder_entries": stats.placeholder_entries,
-                "pending_added": stats.pending_added,
-                "pending_promoted": stats.pending_promoted,
-                "pending_removed": stats.pending_removed,
-                "missing_entries": len(missing),
-                "conflicts": stats.conflicts,
-            },
+        "modules_scanned": len(modules),
+        "stats": {
+            "modules_total": stats.modules_total,
+            "modules_with_values_ru": stats.modules_with_values_ru,
+            "occurrences": stats.occurrences,
+            "unique_sources": stats.unique_sources,
+            "string_map_size": len(string_map),
+            "new_entries": len(string_map) - len(existing),
+            "new_translated_entries": size_after_translated - len(existing),
+            "placeholder_entries": stats.placeholder_entries,
+            "pending_added": stats.pending_added,
+            "pending_promoted": stats.pending_promoted,
+            "pending_removed": stats.pending_removed,
+            "missing_entries": len(missing),
+            "conflicts": stats.conflicts,
         },
     }
 
     out_path = output.expanduser().resolve()
-    _save_json(out_path, library_payload)
+    save_track_map(out_path, track, string_map, meta=library_meta)
     print(
         f"[write][{track}] {out_path} — string_map: {len(string_map)} "
         f"(+{len(string_map) - len(existing)} новых)"
@@ -791,7 +796,7 @@ def _run_track(
             "schema_version": 2,
             "track": track_label,
             "missing": missing,
-            "meta": library_payload["meta"],
+            "meta": library_meta,
         }
         miss_path = missing_output.expanduser().resolve()
         _save_json(miss_path, missing_payload)
@@ -802,7 +807,7 @@ def _run_track(
             "schema_version": 2,
             "track": track_label,
             "conflicts": conflicts,
-            "meta": library_payload["meta"],
+            "meta": library_meta,
         }
         conf_path = conflicts_output.expanduser().resolve()
         _save_json(conf_path, conflicts_payload)
@@ -815,7 +820,7 @@ def _run_track(
             "kind": PENDING_KIND,
             "string_map": order_string_map(pending_map),
             "meta": {
-                **library_payload["meta"],
+                **library_meta,
                 "pending_total": len(pending_map),
                 "pending_empty": sum(
                     1 for v in pending_map.values() if is_placeholder_ru(v)
@@ -989,7 +994,6 @@ def main() -> int:
             existing = _load_existing_for_track(
                 track, args.library_en, args.output_en.resolve(), args.quiet
             )
-            _apply_resolutions(existing, args.resolutions_en, args.quiet)
             _run_track(
                 track,
                 modules,
@@ -1012,7 +1016,6 @@ def main() -> int:
             existing = _load_existing_for_track(
                 track, args.library_zh, args.output_zh.resolve(), args.quiet
             )
-            _apply_resolutions(existing, args.resolutions_zh, args.quiet)
             _run_track(
                 track,
                 modules,

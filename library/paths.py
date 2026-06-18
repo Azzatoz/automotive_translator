@@ -23,6 +23,7 @@ TOR_DIR = REPO_ROOT / "tor"
 DOCS_DIR = REPO_ROOT / "docs"
 REQUIREMENTS_DIR = REPO_ROOT / "requirements"
 CHECKPOINTS_DIR = REPO_ROOT / "checkpoints"
+VENDOR_APKTOOLS = REPO_ROOT / "vendor" / "apktools"
 
 DICT_EN = DICTIONARIES_DIR / "translation_library_ru_en.json"
 DICT_ZH = DICTIONARIES_DIR / "translation_library_ru_zh-rCN.json"

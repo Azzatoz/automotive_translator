@@ -43,14 +43,35 @@ def load_track_map(path: Path) -> dict[str, str]:
     return {str(k): str(v) for k, v in sm.items()}
 
 
-def save_track_map(path: Path, track: Track, string_map: dict[str, str]) -> None:
+def save_track_map(
+    path: Path,
+    track: Track,
+    string_map: dict[str, str],
+    *,
+    meta: dict | None = None,
+    merge_meta: bool = True,
+) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    payload = {
+    merged_meta: dict = {}
+    if merge_meta and path.is_file():
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+            prev = data.get("meta")
+            if isinstance(prev, dict):
+                merged_meta.update(prev)
+        except (OSError, json.JSONDecodeError, ValueError):
+            pass
+    if meta:
+        merged_meta.update(meta)
+    track_label = "en" if track == "en" else "zh-rCN"
+    payload: dict = {
         "schema_version": SCHEMA_VERSION,
-        "track": track,
+        "track": track_label,
         "string_map": order_string_map(string_map),
         "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
+    if merged_meta:
+        payload["meta"] = merged_meta
     tmp = path.with_suffix(path.suffix + ".tmp")
     tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     tmp.replace(path)

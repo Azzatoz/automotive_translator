@@ -171,11 +171,21 @@ class ModuleAlignDialog(QDialog):
         self._btn_apply_new.clicked.connect(self._apply_new_current)
         self._btn_apply_new.setEnabled(False)
         action_row.addWidget(self._btn_apply_new)
+
+        self._btn_apply_new_dict = QPushButton("Новая + словарь")
+        self._btn_apply_new_dict.setObjectName("primaryBtn")
+        self._btn_apply_new_dict.setToolTip(
+            "Записать в APK текст из поля «Новый перевод» и обновить общий словарь en/zh"
+        )
+        self._btn_apply_new_dict.clicked.connect(self._apply_new_with_dict_current)
+        self._btn_apply_new_dict.setEnabled(False)
+        action_row.addWidget(self._btn_apply_new_dict)
         right_layout.addLayout(action_row)
 
         hint = QLabel(
             "◆ — без правок в поле · ● — правили «Новый перевод». "
-            "Словарь en/zh при записи не меняется. Ctrl+Z — отмена последней записи в APK."
+            "«Записать новую» — только APK; «Новая + словарь» — APK и JSON en/zh. "
+            "Ctrl+Z — отмена последней записи в APK."
         )
         hint.setObjectName("hintLabel")
         hint.setWordWrap(True)
@@ -199,6 +209,12 @@ class ModuleAlignDialog(QDialog):
         btn_apply_sel.setToolTip("Записать в APK текст из поля для текущей строки / правки по строкам")
         btn_apply_sel.clicked.connect(self._apply_selected)
         row_btns.addWidget(btn_apply_sel)
+        btn_apply_dict_sel = QPushButton("Новая + словарь (выдел.)")
+        btn_apply_dict_sel.setToolTip(
+            "Записать в APK и обновить словарь en/zh для выделенных строк"
+        )
+        btn_apply_dict_sel.clicked.connect(self._apply_selected_with_dict)
+        row_btns.addWidget(btn_apply_dict_sel)
         btn_keep_sel = QPushButton("Оставить (выдел.)")
         btn_keep_sel.clicked.connect(self._keep_selected)
         row_btns.addWidget(btn_keep_sel)
@@ -409,6 +425,7 @@ class ModuleAlignDialog(QDialog):
         self._btn_keep.setEnabled(enabled)
         self._btn_from_dict.setEnabled(enabled)
         self._btn_apply_new.setEnabled(enabled)
+        self._btn_apply_new_dict.setEnabled(enabled)
 
     def _show_detail(self, m: ModuleDictMismatch | None) -> None:
         self._loading_detail = True
@@ -601,7 +618,13 @@ class ModuleAlignDialog(QDialog):
             return
         self._restore_after_undo(record.snapshots, items)
 
-    def _apply_updates(self, updates: dict[str, str], *, success_title: str) -> None:
+    def _apply_updates(
+        self,
+        updates: dict[str, str],
+        *,
+        success_title: str,
+        update_dictionary: bool = False,
+    ) -> None:
         if not updates:
             return
         by_id = self._mismatch_by_row_id()
@@ -611,7 +634,7 @@ class ModuleAlignDialog(QDialog):
             self._module.path,
             rows,
             updates,
-            update_dictionary=False,
+            update_dictionary=update_dictionary,
         )
         if not applied:
             QMessageBox.warning(self, success_title, "Не удалось записать в values-ru.")
@@ -673,6 +696,17 @@ class ModuleAlignDialog(QDialog):
         updates = self._build_updates_from_drafts([m])
         self._apply_updates(updates, success_title="Записать новую")
 
+    def _apply_new_with_dict_current(self) -> None:
+        m = self._current_mismatch()
+        if not m:
+            return
+        updates = self._build_updates_from_drafts([m])
+        self._apply_updates(
+            updates,
+            success_title="Новая + словарь",
+            update_dictionary=True,
+        )
+
     def _apply_selected(self) -> None:
         targets = self._selected_mismatches()
         if not targets:
@@ -680,3 +714,15 @@ class ModuleAlignDialog(QDialog):
             return
         updates = self._build_updates_from_drafts(targets)
         self._apply_updates(updates, success_title="Записать новую")
+
+    def _apply_selected_with_dict(self) -> None:
+        targets = self._selected_mismatches()
+        if not targets:
+            QMessageBox.information(self, "Новая + словарь", "Нет выделенных строк.")
+            return
+        updates = self._build_updates_from_drafts(targets)
+        self._apply_updates(
+            updates,
+            success_title="Новая + словарь",
+            update_dictionary=True,
+        )

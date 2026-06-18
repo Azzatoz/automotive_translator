@@ -109,6 +109,10 @@ def cmd_init(
     return 0
 
 
+def _track_for_library(path: Path) -> str:
+    return "zh" if "zh" in path.name.lower() else "en"
+
+
 def cmd_apply(
     resolutions_path: Path,
     library_path: Path,
@@ -126,12 +130,11 @@ def cmd_apply(
         print("resolutions должен быть объектом", file=sys.stderr)
         return 1
 
+    string_map: dict[str, str] = {}
     if library_path.is_file():
-        lib_data = _load_json(library_path)
-    else:
-        lib_data = {"schema_version": 1, "string_map": {}, "meta": {}}
+        from library_persist import load_track_map
 
-    string_map: dict[str, str] = dict(lib_data.get("string_map") or {})
+        string_map = dict(load_track_map(library_path))
     applied = 0
     skipped_empty = 0
     skipped_same = 0
@@ -171,15 +174,14 @@ def cmd_apply(
         string_map[src] = chosen
         applied += 1
 
-    lib_data["schema_version"] = 1
-    from library_persist import order_string_map
+    from library_persist import save_track_map
 
-    lib_data["string_map"] = order_string_map(string_map)
-    meta = dict(lib_data.get("meta") or {})
-    meta["resolutions_applied_at"] = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-    meta["resolutions_file"] = str(resolutions_path)
-    meta["string_map_size"] = len(string_map)
-    lib_data["meta"] = meta
+    track = _track_for_library(library_path)
+    meta = {
+        "resolutions_applied_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "resolutions_file": str(resolutions_path),
+        "string_map_size": len(string_map),
+    }
 
     print(f"[stats] применено: {applied}, без chosen: {skipped_empty}, без изменений: {skipped_same}")
     if warnings:
@@ -190,10 +192,10 @@ def cmd_apply(
             print(f"  … и ещё {len(warnings) - 20}")
 
     if dry_run:
-        print("[dry-run] translation_library_ru.json не записан")
+        print("[dry-run] словарь не записан")
         return 0
 
-    _save_json(library_path, lib_data)
+    save_track_map(library_path, track, string_map, meta=meta)  # type: ignore[arg-type]
     print(f"[write] {library_path} — string_map: {len(string_map)}")
     return 0
 

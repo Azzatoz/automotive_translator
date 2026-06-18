@@ -7,7 +7,7 @@ from PyQt6.QtCore import QObject, QSettings, pyqtSignal
 from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import QApplication
 
-ModuleStatus = Literal["ready", "ready_drift", "placeholders", "conflicts", "unprocessed"]
+ModuleStatus = Literal["ready", "ready_drift", "placeholders", "conflicts", "unprocessed", "apk_only"]
 StatTone = Literal["default", "success", "warning", "danger"]
 
 
@@ -462,6 +462,7 @@ QRadioButton::indicator:disabled {{
             "placeholders": (self.bg_warning, self.text_warning),
             "conflicts": (self.bg_danger, self.text_danger),
             "unprocessed": (self.bg_muted, self.text_muted),
+            "apk_only": (self.bg_warning, self.text_warning),
         }
         bg, fg = mapping.get(status, (self.bg_muted, self.text_muted))
         return (

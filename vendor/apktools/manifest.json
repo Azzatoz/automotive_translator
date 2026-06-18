@@ -1,0 +1,9 @@
+{
+  "source": "/opt/apktools/Resources",
+  "files": [
+    "README.md",
+    "apksigner.jar",
+    "apktool.jar",
+    "zipalign"
+  ]
+}

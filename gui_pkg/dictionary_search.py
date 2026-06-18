@@ -12,7 +12,7 @@ from gui_pkg.scanner import discover_modules, display_module_name, load_conflict
 
 sys.path.insert(0, str(REPO_ROOT / "library"))
 from library_persist import load_track_map, save_track_map  # noqa: E402
-from source_resolve import Track, is_placeholder_ru  # noqa: E402
+from source_resolve import SourceVariant, Track, apply_ru_to_track_maps, is_placeholder_ru  # noqa: E402
 
 
 @dataclass(frozen=True)
@@ -144,8 +144,15 @@ def filter_hits(
 
 def save_dictionary_translation(hit: DictSearchHit, new_ru: str) -> None:
     path = dictionary_path_for_track_key(hit.track)
-    smap = load_track_map(path) if path.is_file() else {}
-    if hit.source not in smap:
+    track_maps: dict[Track, dict[str, str]] = {hit.track_key: load_track_map(path) if path.is_file() else {}}
+    if hit.source not in track_maps[hit.track_key]:
         raise KeyError(hit.source)
-    smap[hit.source] = new_ru
-    save_track_map(path, hit.track_key, smap)
+    variants = [
+        SourceVariant(track=hit.track_key, text=hit.source, locale="dictionary"),
+    ]
+    dirty = apply_ru_to_track_maps(track_maps, variants, new_ru)
+    if not dirty:
+        raise ValueError(
+            "перевод не принят: заглушка, техническая строка или несовместим с исходником"
+        )
+    save_track_map(path, hit.track_key, track_maps[hit.track_key])

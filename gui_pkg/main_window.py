@@ -60,7 +60,11 @@ from gui_pkg.config import (
 from gui_pkg.conflicts_panel import ConflictsPanel
 from gui_pkg.module_sidebar import ModuleSidebar
 from gui_pkg.dictionary_panel import DictionaryPanel
+from gui_pkg.apk_panel import ApkPanel
+from gui_pkg.apk_string_search import ApkRuSearchHit
+from gui_pkg.apk_string_search_dialog import ApkStringSearchDialog
 from gui_pkg.dictionary_search_dialog import DictionarySearchDialog
+from gui_pkg.values_ru_editor_dialog import ValuesRuEditorDialog
 from gui_pkg.translate_panel import TranslatePanel
 from gui_pkg.layout_panel import LayoutPanel
 from gui_pkg.placeholder_editor import apply_placeholder_translations
@@ -69,6 +73,7 @@ from gui_pkg.scanner import (
     ModuleInfo,
     aggregate_project_stats,
     discover_modules,
+    discover_project_entries,
     display_module_name,
     load_conflicts_cache,
     modules_in_conflict,
@@ -120,6 +125,7 @@ class MainWindow(QMainWindow):
         self._module_sidebar: ModuleSidebar | None = None
         self._translate_panel: TranslatePanel | None = None
         self._layout_panel: LayoutPanel | None = None
+        self._apk_panel: ApkPanel | None = None
         self._btn_browse: QPushButton | None = None
         self._btn_reload: QPushButton | None = None
         self._modules: dict[str, ModuleInfo] = {}
@@ -128,6 +134,7 @@ class MainWindow(QMainWindow):
         self._pending_stats_modules: set[str] = set()
         self._pending_refresh_after_cmd = False
         self._refresh_modules_after_cmd = True
+        self._pending_select_after_reload: str | None = None
         self._action_buttons: list[QPushButton] = []
 
         self._runner = ProcessController(self)
@@ -181,7 +188,13 @@ class MainWindow(QMainWindow):
         self._btn_browse.clicked.connect(self._browse_root)
         self._btn_reload = QPushButton("Обновить")
         self._btn_reload.clicked.connect(self._reload_modules)
+        self._btn_apk_search = QPushButton("Поиск строки…")
+        self._btn_apk_search.setToolTip(
+            "Поиск подстроки в res/values-ru по всем загруженным модулям"
+        )
+        self._btn_apk_search.clicked.connect(self._open_apk_string_search)
         title_layout.addWidget(self._btn_browse)
+        title_layout.addWidget(self._btn_apk_search)
         title_layout.addWidget(self._btn_reload)
         root_layout.addWidget(title_bar)
 
@@ -418,8 +431,21 @@ class MainWindow(QMainWindow):
 
         layout.addWidget(self._layout_panel)
 
-        # ── 2. Обслуживание словаря ───────────────────────────────────────
-        dict_group = QGroupBox("2.  Обслуживание словаря")
+        self._apk_panel = ApkPanel(
+            get_root=self._current_root,
+            get_current_module=self._current_module,
+            get_modules=lambda: self._modules,
+            run_cli=self._run_apk_cli,
+            decompile_apk=self._decompile_apk_file,
+            on_modules_changed=self._reload_modules,
+            parent=self,
+        )
+        for btn in self._apk_panel.findChildren(QPushButton):
+            self._action_buttons.append(btn)
+        layout.addWidget(self._apk_panel)
+
+        # ── 4. Обслуживание словаря ───────────────────────────────────────
+        dict_group = QGroupBox("4.  Обслуживание словаря")
         dict_form = QVBoxLayout(dict_group)
         dict_form.setSpacing(10)
 
@@ -584,6 +610,52 @@ class MainWindow(QMainWindow):
     def _show_faq(self) -> None:
         show_faq(self)
 
+    def _run_apk_cli(self, args: list[str], label: str, *, select_src: str | None = None) -> None:
+        self._pending_refresh_after_cmd = False
+        if select_src:
+            self._pending_select_after_reload = select_src
+        self._runner.run_single(args, label)
+        self._show_log_tab()
+
+    def _decompile_apk_file(self, apk_path: str) -> None:
+        from gui_pkg.config import SCRIPTS_DIR
+
+        apk = Path(apk_path)
+        self._run_apk_cli(
+            [str(SCRIPTS_DIR / "apk_toolchain_cli.py"), "decompile", str(apk)],
+            f"apk decompile {apk.stem}",
+            select_src=f"{apk.stem}_src",
+        )
+
+    def _decompile_apk_entry(self, info: ModuleInfo) -> None:
+        apk = info.resolved_apk_path()
+        if apk is None or not apk.is_file():
+            QMessageBox.warning(self, "APK", "APK-файл не найден в папке проекта.")
+            return
+        self._decompile_apk_file(str(apk))
+
+    def _build_apk_module(self, info: ModuleInfo) -> None:
+        if not info.is_src:
+            QMessageBox.information(self, "APK", "Сначала распакуйте APK в модуль *_src.")
+            return
+        if self._apk_panel is None:
+            return
+        if self._module_sidebar:
+            self._module_sidebar.set_current_module(info.name)
+        self._tabs.setCurrentIndex(TAB_ACTIONS)
+        self._apk_panel.build_current_module()
+
+    def _push_apk_module(self, info: ModuleInfo) -> None:
+        if not info.is_src:
+            QMessageBox.information(self, "APK", "Push доступен только для распакованных модулей.")
+            return
+        if self._apk_panel is None:
+            return
+        if self._module_sidebar:
+            self._module_sidebar.set_current_module(info.name)
+        self._tabs.setCurrentIndex(TAB_ACTIONS)
+        self._apk_panel.push_current_module()
+
     def _open_dictionary_search(self) -> None:
         dlg = DictionarySearchDialog(
             project_root=self._current_root(),
@@ -593,6 +665,70 @@ class MainWindow(QMainWindow):
         )
         dlg.setAttribute(Qt.WidgetAttribute.WA_DeleteOnClose)
         dlg.show()
+
+    def _open_values_ru_editor(
+        self,
+        info: ModuleInfo,
+        *,
+        initial_filter: str = "",
+        focus_row_id: str | None = None,
+    ) -> None:
+        ru_dir = info.path / "res" / "values-ru"
+        if not ru_dir.is_dir():
+            QMessageBox.warning(
+                self,
+                "values-ru",
+                f"У модуля «{info.display}» нет папки res/values-ru.",
+            )
+            return
+        try:
+            dlg = ValuesRuEditorDialog(
+                info,
+                theme=self._theme,
+                on_saved=self._refresh_module_stats,
+                initial_filter=initial_filter,
+                focus_row_id=focus_row_id,
+                parent=self,
+            )
+            dlg.exec()
+        except Exception as exc:
+            QMessageBox.critical(
+                self,
+                "values-ru",
+                f"Не удалось открыть редактор:\n{exc}",
+            )
+
+    def _open_apk_string_search(self) -> None:
+        if not self._modules:
+            QMessageBox.information(
+                self,
+                "Поиск строки",
+                "Сначала выберите папку проекта и нажмите «Обновить».",
+            )
+            return
+        dlg = ApkStringSearchDialog(
+            modules=self._modules,
+            theme=self._theme,
+            on_open_hit=self._open_apk_search_hit,
+            parent=self,
+        )
+        dlg.exec()
+
+    def _open_apk_search_hit(self, hit: ApkRuSearchHit, query: str) -> None:
+        info = self._modules.get(hit.module_name)
+        if info is None:
+            QMessageBox.warning(
+                self,
+                "Поиск строки",
+                f"Модуль «{hit.module_display}» не найден в списке.",
+            )
+            return
+        self._module_sidebar.set_current_module(hit.module_name)
+        self._open_values_ru_editor(
+            info,
+            initial_filter=query,
+            focus_row_id=hit.row_id,
+        )
 
     def _on_dictionary_search_saved(self) -> None:
         if hasattr(self, "_dictionary_panel"):
@@ -733,23 +869,29 @@ class MainWindow(QMainWindow):
         self._settings.setValue("last_root", str(root))
         selected_name = self._current_module_name()
         self._stop_module_scan_workers()
-        modules = discover_modules(root)
+        modules = discover_project_entries(root)
         self._modules.clear()
-        for mod in modules:
-            info = ModuleInfo(path=mod, name=mod.name, display=display_module_name(mod.name))
-            self._modules[mod.name] = info
+        src_paths: list[Path] = []
+        for info in modules:
+            self._modules[info.name] = info
+            if info.is_src:
+                src_paths.append(info.path)
 
         self._update_path_label()
         if self._translate_panel:
             self._translate_panel.update_scope_label()
         if self._module_sidebar:
             self._module_sidebar.set_modules(self._modules)
+        if self._apk_panel:
+            self._apk_panel.refresh_project_hint()
         self._update_project_summary()
 
-        if selected_name and self._module_sidebar:
-            self._module_sidebar.set_current_module(selected_name)
+        pick = self._pending_select_after_reload or selected_name
+        if pick and self._module_sidebar and pick in self._modules:
+            self._module_sidebar.set_current_module(pick)
+            self._pending_select_after_reload = None
 
-        self._scan_worker = ModuleScanWorker(modules, self)
+        self._scan_worker = ModuleScanWorker(src_paths, self)
         self._scan_worker.module_scanned.connect(self._on_module_scanned)
         self._scan_worker.finished_scan.connect(self._on_scan_finished)
         self._status_label.setText("Сканирование модулей…")
@@ -786,9 +928,12 @@ class MainWindow(QMainWindow):
                 f" ({agg['ready_drift_modules']} с расхождениями values-ru↔словарь, "
                 f"всего {agg['dict_mismatches']})"
             )
+        apk_note = ""
+        if agg.get("apk_only"):
+            apk_note = f" · {agg['apk_only']} APK не распаковано"
         self._project_summary.setText(
-            f"<b>Проект:</b> {agg['modules']} модулей · "
-            f"переведено {translated}/{total} ({pct}%) · "
+            f"<b>Проект:</b> {agg['src_modules']} распаковано{apk_note}"
+            f" · переведено {translated}/{total} ({pct}%) · "
             f"заглушек {agg['placeholders']} · конфликтов в словаре {agg['conflicts']} · "
             f"готовых модулей {agg['ready_modules']}{drift_note}"
         )
@@ -848,7 +993,7 @@ class MainWindow(QMainWindow):
             if after_name and name == after_name:
                 continue
             info = self._modules.get(name)
-            if not info:
+            if not info or not info.is_src:
                 continue
             ph = int((info.stats or {}).get("placeholders", 0))
             if ph > 0:
@@ -867,8 +1012,12 @@ class MainWindow(QMainWindow):
 
     def _on_sidebar_module_double_clicked(self, name: str) -> None:
         info = self._modules.get(name)
-        if info:
-            self._open_placeholders_dialog(info)
+        if not info:
+            return
+        if info.is_apk_only:
+            self._decompile_apk_entry(info)
+            return
+        self._open_placeholders_dialog(info)
 
     def _on_sidebar_context_menu(self, pos, item: QListWidgetItem) -> None:
         self._on_module_context_menu(pos, item)
@@ -942,9 +1091,31 @@ class MainWindow(QMainWindow):
             return
         self._module_list.setCurrentItem(item)
         menu = QMenu(self)
+        if info.is_apk_only:
+            act_decompile = menu.addAction("Распаковать APK")
+            act_decompile.setToolTip("apktool d → папка *_src в папке проекта")
+            menu.addSeparator()
+            act_open_apk = menu.addAction("Показать APK в проводнике")
+            chosen = menu.exec(self._module_list.mapToGlobal(pos))
+            if chosen == act_decompile:
+                self._decompile_apk_entry(info)
+            elif chosen == act_open_apk:
+                self._open_path_in_explorer(info.path.parent)
+            return
+
         act_placeholders = menu.addAction("Открыть заглушки")
         act_fill = menu.addAction("Перевести модуль…")
         act_align = menu.addAction("Подставить из словаря в APK…")
+        menu.addSeparator()
+        act_edit_values_ru = menu.addAction("Редактировать values-ru…")
+        act_edit_values_ru.setToolTip(
+            "Исходник из values-en (если есть), правка res/values-ru в окне"
+        )
+        menu.addSeparator()
+        act_build_apk = menu.addAction("Собрать APK…")
+        act_build_apk.setToolTip("apktool b + zipalign + подпись → *_src-signed.apk")
+        act_push_apk = menu.addAction("Push APK на устройство…")
+        act_push_apk.setToolTip("adb root/remount/push (как push_common.sh)")
         menu.addSeparator()
         act_values = menu.addAction("Открыть values")
         act_values_ru = menu.addAction("Открыть values-ru")
@@ -956,6 +1127,12 @@ class MainWindow(QMainWindow):
             self._fill_single_module(info)
         elif chosen == act_align:
             self._open_module_align_dialog(info)
+        elif chosen == act_edit_values_ru:
+            self._open_values_ru_editor(info)
+        elif chosen == act_build_apk:
+            self._build_apk_module(info)
+        elif chosen == act_push_apk:
+            self._push_apk_module(info)
         elif chosen == act_values:
             self._open_path_in_explorer(self._locale_values_dir(info))
         elif chosen == act_values_ru:
@@ -1034,6 +1211,15 @@ class MainWindow(QMainWindow):
         self._start_stats_refresh_worker([info.name])
 
     def _update_overview(self, info: ModuleInfo) -> None:
+        if info.is_apk_only:
+            self._module_title.setText(f"{info.display}  (APK — не распакован)")
+            self._card_total.set_value("—")
+            self._card_translated.set_value("—")
+            self._card_placeholders.set_value("—")
+            self._card_conflicts.set_value("—")
+            self._overview_progress.setValue(0)
+            self._overview_pct.setText("APK")
+            return
         stats = info.stats or scan_module(info.path)
         total = stats.get("total", 0)
         translated = stats.get("translated", 0)
@@ -1063,6 +1249,8 @@ class MainWindow(QMainWindow):
         finished_label = self._runner.current_label
         if exit_code == 0 and self._conflicts_panel:
             self._conflicts_panel.on_apply_step_finished(finished_label)
+        if self._apk_panel:
+            self._apk_panel.on_command_finished(exit_code, finished_label)
 
         if not self._runner.is_running:
             self._set_commands_enabled(True)

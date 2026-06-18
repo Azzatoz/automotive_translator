@@ -835,12 +835,15 @@ def ensure_placeholders_in_map(
     return changed
 
 
-def sync_ru_to_variant_keys(
+def apply_ru_to_track_maps(
     track_maps: dict[Track, dict[str, str]],
     variants: list[SourceVariant],
     ru_text: str,
 ) -> set[Track]:
-    """Записать один ru под каждый вариант исходника в соответствующий трек-словарь."""
+    """
+    Единая запись ru в en/zh словари: по каждому варианту исходника в свой трек и ключ.
+    Поддерживает реальный перевод и copy-as-is (ru совпадает с исходником).
+    """
     dirty: set[Track] = set()
     if not variants:
         return dirty
@@ -849,18 +852,32 @@ def sync_ru_to_variant_keys(
         return dirty
     if skip_for_translation_library(ru_text):
         return dirty
-    if all(ru_s == v.text for v in variants):
-        return dirty
     for v in variants:
-        if skip_for_translation_library(v.text):
+        vtext = v.text or ""
+        if skip_for_translation_library(vtext):
             continue
-        if not is_real_translation(v.text, ru_text):
+        if ru_s == vtext.strip():
+            if not is_usable_library_ru(vtext, ru_s):
+                continue
+            new_val = vtext
+        elif not is_usable_library_ru(vtext, ru_s):
             continue
+        else:
+            new_val = ru_s
         m = track_maps.setdefault(v.track, {})
-        if m.get(v.text) != ru_text:
-            m[v.text] = ru_text
+        if m.get(vtext) != new_val:
+            m[vtext] = new_val
             dirty.add(v.track)
     return dirty
+
+
+def sync_ru_to_variant_keys(
+    track_maps: dict[Track, dict[str, str]],
+    variants: list[SourceVariant],
+    ru_text: str,
+) -> set[Track]:
+    """Записать один ru под каждый вариант исходника в соответствующий трек-словарь."""
+    return apply_ru_to_track_maps(track_maps, variants, ru_text)
 
 
 def ensure_ru_from_track_maps(
@@ -880,7 +897,10 @@ def ensure_ru_from_track_maps(
         track_maps, variants, values_en_first=values_en_first
     )
     if ru is not None:
-        return ru, set(), True
+        dirty = register_placeholders_in_track_maps(
+            track_maps, variants, placeholder_ru=placeholder_ru
+        )
+        return ru, dirty, True
     for v in variants:
         if _copy_source_as_ru_for_track(v.text, track=v.track):
             m = track_maps.setdefault(v.track, {})

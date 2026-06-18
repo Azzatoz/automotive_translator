@@ -61,6 +61,7 @@ class ModuleSidebar(QWidget):
         filter_row = QHBoxLayout()
         self._status_filter_combo = QComboBox()
         self._status_filter_combo.addItem("Все модули", "all")
+        self._status_filter_combo.addItem("Нераспакованные APK", "apk_only")
         self._status_filter_combo.addItem("С заглушками", "placeholders")
         self._status_filter_combo.addItem("С конфликтами", "conflicts")
         self._status_filter_combo.addItem("С Google (отчёт)", "google")
@@ -77,7 +78,7 @@ class ModuleSidebar(QWidget):
 
         self._list = QListWidget()
         self._list.setToolTip(
-            "Двойной щелчок — заглушки в APK; ПКМ — меню модуля"
+            "Двойной щелчок — заглушки (распакованный модуль) или распаковка APK; ПКМ — меню"
         )
         self._list.currentItemChanged.connect(self._on_current_changed)
         self._list.itemDoubleClicked.connect(self._on_double_clicked)
@@ -106,10 +107,10 @@ class ModuleSidebar(QWidget):
             info = self._modules[name]
             stats = info.stats or {}
             if sort_key == "placeholders":
-                return (-int(stats.get("placeholders", 0)), name.lower())
+                return (-int(stats.get("placeholders", 0)), info.display.lower())
             if sort_key == "conflicts":
-                return (-int(stats.get("conflicts", 0)), name.lower())
-            return (name.lower(),)
+                return (-int(stats.get("conflicts", 0)), info.display.lower())
+            return (info.display.lower(), name.lower())
 
         names.sort(key=sort_tuple)
         self._sorted_names = names
@@ -121,6 +122,8 @@ class ModuleSidebar(QWidget):
             item.setData(Qt.ItemDataRole.UserRole, name)
             item.setSizeHint(QSize(0, 48))
             row = ModuleListRow(info.display, "…", "unprocessed", theme=self._theme)
+            if info.kind == "apk":
+                row = ModuleListRow(info.display, "не распакован", "apk_only", theme=self._theme)
             self._list.addItem(item)
             self._list.setItemWidget(item, row)
             self._module_rows[name] = (item, row)
@@ -190,6 +193,8 @@ class ModuleSidebar(QWidget):
                 st = (info.stats or {}).get("status", "unprocessed")
                 if status_filter == "google":
                     status_ok = name in self._google_modules
+                elif status_filter == "apk_only":
+                    status_ok = info.kind == "apk"
                 else:
                     status_ok = st == status_filter
             item.setHidden(not (text_ok and status_ok))

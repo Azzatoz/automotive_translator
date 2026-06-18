@@ -58,7 +58,7 @@ from source_resolve import (  # noqa: E402
     pick_assist_name_from_elements,
     looks_technical,
     skip_for_translation_library,
-    sync_ru_to_variant_keys,
+    apply_ru_to_track_maps,
 )
 
 TRANSLATABLE_XML = ("strings.xml", "plurals.xml", "arrays.xml")
@@ -426,8 +426,31 @@ def make_translator(
     report: SessionReport,
     module_name: str,
     xml_file: str,
+    google_then_placeholders: bool = False,
+    track_maps: dict[Track, dict[str, str]] | None = None,
+    dirty_tracks: set[Track] | None = None,
+    placeholder_ru: str = PLACEHOLDER_RU,
 ) -> Callable[[str, str], str]:
     """translate_fn(text, resource_key) -> ru text; бросает при ошибке Google."""
+
+    def _placeholder_fallback(
+        variants: list[SourceVariant],
+    ) -> str:
+        if not google_then_placeholders or track_maps is None:
+            raise RuntimeError("нет в библиотеке и Google недоступен")
+        ru_val, dirty, from_lib = ensure_ru_from_track_maps(
+            track_maps,
+            variants,
+            placeholder_ru=placeholder_ru,
+            values_en_first=values_en_first,
+        )
+        if dirty_tracks is not None:
+            dirty_tracks.update(dirty)
+        if dirty:
+            report.stats.registered_placeholder += 1
+        if from_lib:
+            report.stats.applied_from_library += 1
+        return ru_val
 
     def translate(
         text: str,
@@ -470,13 +493,24 @@ def make_translator(
                 return ru
 
         if not allow_google:
+            if google_then_placeholders:
+                return _placeholder_fallback(vlist)
             raise RuntimeError("нет в библиотеке и Google отключён (--library-only)")
 
         print(
             f"  [Google] {module_name} {resource_key}",
             flush=True,
         )
-        ru = fvr._translate_with_google(src, source_lang, target_lang)
+        try:
+            ru = fvr._translate_with_google(src, source_lang, target_lang)
+        except Exception as exc:
+            if google_then_placeholders:
+                print(
+                    f"  [заглушка] {module_name} {resource_key}: Google — {exc}",
+                    flush=True,
+                )
+                return _placeholder_fallback(vlist)
+            raise
         report.record_google(
             module=module_name,
             resource_key=resource_key,
@@ -557,11 +591,7 @@ def _sync_apk_ru_to_dictionary(
     report: SessionReport,
 ) -> None:
     """Перезаписать все варианты исходника в en/zh словарях переводом из values-ru."""
-    if skip_for_translation_library(ru_text):
-        return
-    if any(skip_for_translation_library(v.text) for v in variants):
-        return
-    dirty = sync_ru_to_variant_keys(track_maps, variants, ru_text)
+    dirty = apply_ru_to_track_maps(track_maps, variants, ru_text)
     if dirty:
         dirty_tracks.update(dirty)
         report.stats.synced_to_dictionary += 1
@@ -1278,6 +1308,11 @@ def fill_module(
     lang_filter: bool,
     dry_run: bool,
     xml_files: tuple[str, ...],
+    google_then_placeholders: bool = False,
+    track_maps: dict[Track, dict[str, str]] | None = None,
+    library_paths: dict[Track, Path] | None = None,
+    placeholder_ru: str = PLACEHOLDER_RU,
+    dirty_tracks: set[Track] | None = None,
 ) -> int:
     cp_path = _checkpoint_path(module_dir, tools_dir)
     done_keys: set[str] = _load_checkpoint(cp_path) if resume else set()
@@ -1288,7 +1323,7 @@ def fill_module(
         library_only = True
     allow_google = not library_only and fvr.GoogleTranslator is not None
 
-    if not library_only and fvr.GoogleTranslator is None:
+    if not library_only and fvr.GoogleTranslator is None and not google_then_placeholders:
         print(
             "Ошибка: нужен deep-translator для fallback.\n"
             "  pip install deep-translator\n"
@@ -1297,6 +1332,13 @@ def fill_module(
             file=sys.stderr,
         )
         return 1
+
+    if google_then_placeholders and fvr.GoogleTranslator is None:
+        print(
+            "[warn] deep-translator недоступен — режим «Google + заглушки» "
+            "будет использовать только словарь и заглушки",
+            flush=True,
+        )
 
     merged_by_xml: dict[str, tuple[ET.Element, Path]] = {}
     total_errors = 0
@@ -1337,6 +1379,10 @@ def fill_module(
             report=report,
             module_name=module_dir.name,
             xml_file=xml_name,
+            google_then_placeholders=google_then_placeholders,
+            track_maps=track_maps,
+            dirty_tracks=dirty_tracks,
+            placeholder_ru=placeholder_ru,
         )
 
         before_keys = len(done_keys)
@@ -1365,6 +1411,18 @@ def fill_module(
 
     if changed_since_save > 0:
         flush_all()
+
+    if (
+        google_then_placeholders
+        and dirty_tracks
+        and library_paths
+        and not dry_run
+    ):
+        for track in sorted(dirty_tracks):
+            if track_maps is None:
+                break
+            save_track_map(library_paths[track], track, track_maps[track])
+            print(f"[save] словарь [{track}] {library_paths[track]}", flush=True)
 
     module_work = (report.stats.library - stats_lib0) + (report.stats.google - stats_google0)
     lang_skip_n = report.stats.lang_skipped - lang_skipped0
@@ -1472,6 +1530,14 @@ def main() -> int:
         ),
     )
     ap.add_argument(
+        "--google-then-placeholders",
+        action="store_true",
+        help=(
+            "Словарь en+zh, затем Google; для оставшихся пропусков — заглушка в словарь "
+            "и values-ru (без ошибки)"
+        ),
+    )
+    ap.add_argument(
         "--placeholder-ru",
         default=PLACEHOLDER_RU,
         help="Заглушка для новых записей в словаре (режим --ensure-dictionary)",
@@ -1500,6 +1566,9 @@ def main() -> int:
 
     if args.ensure_dictionary:
         args.library_only = True
+    if args.google_then_placeholders and args.ensure_dictionary:
+        print("Нельзя совмещать --ensure-dictionary и --google-then-placeholders", file=sys.stderr)
+        return 2
 
     primary_lib = (
         args.library.expanduser().resolve()
@@ -1527,6 +1596,26 @@ def main() -> int:
             flush=True,
         )
         string_map = {}
+    elif args.google_then_placeholders:
+        tools_dir = args.tools_dir.resolve()
+        library_paths = {
+            "en": library_path_for_track(tools_dir, "en"),
+            "zh": library_path_for_track(tools_dir, "zh"),
+        }
+        track_maps = {
+            "en": load_track_map(library_paths["en"]),
+            "zh": load_track_map(library_paths["zh"]),
+        }
+        both_libs = [library_paths["en"], library_paths["zh"]]
+        string_map = _load_string_maps(*both_libs, *lib_paths)
+        if not string_map:
+            print(f"Пустая библиотека: {both_libs + lib_paths}", file=sys.stderr)
+            return 1
+        print(
+            f"[info] --google-then-placeholders: словарь {len(string_map)} записей, "
+            f"заглушка={args.placeholder_ru!r}",
+            flush=True,
+        )
     else:
         library_paths = {}
         track_maps = {}
@@ -1591,6 +1680,12 @@ def main() -> int:
     fill_passes = _resolve_fill_passes(args)
     if args.ensure_dictionary:
         pass
+    elif args.google_then_placeholders:
+        print(
+            "[info] режим «словарь + Google + заглушки»: два прохода en/zh; "
+            "пропуски после Google → заглушка в словарь и APK",
+            flush=True,
+        )
     elif len(fill_passes) > 1:
         print(
             "[info] режим «словарь + Google»: два прохода — сначала en, затем zh-CN; "
@@ -1634,6 +1729,7 @@ def main() -> int:
                 report=report,
             )
             continue
+        module_dirty: set[Track] = set()
         for pass_source_lang, pass_label, pass_lang_filter in fill_passes:
             if pass_label:
                 print(f"[info] проход Google: {pass_label}", flush=True)
@@ -1653,6 +1749,11 @@ def main() -> int:
                 lang_filter=pass_lang_filter,
                 dry_run=args.dry_run,
                 xml_files=xml_files,
+                google_then_placeholders=args.google_then_placeholders,
+                track_maps=track_maps if args.google_then_placeholders else None,
+                library_paths=library_paths if args.google_then_placeholders else None,
+                placeholder_ru=args.placeholder_ru,
+                dirty_tracks=module_dirty if args.google_then_placeholders else None,
             )
             rc = max(rc, r)
 

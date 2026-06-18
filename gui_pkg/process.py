@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 
 from PyQt6.QtCore import QObject, QProcess, pyqtSignal
 
@@ -20,7 +21,7 @@ class ProcessController(QObject):
         self._process.readyReadStandardOutput.connect(self._on_stdout)
         self._process.readyReadStandardError.connect(self._on_stderr)
         self._process.finished.connect(self._on_finished)
-        self._queue: list[tuple[list[str], str]] = []
+        self._queue: list[tuple[list[str], str, str | None, str | Path | None]] = []
         self._running = False
         self._current_label = ""
         self._last_lines: list[str] = []
@@ -34,12 +35,38 @@ class ProcessController(QObject):
         return self._current_label
 
     def enqueue(self, args: list[str], label: str) -> None:
-        self._queue.append((args, label))
+        self._queue.append((args, label, None, None))
         if not self._running:
             self._start_next()
 
     def run_single(self, args: list[str], label: str) -> None:
-        self._queue = [(args, label)]
+        self._queue = [(args, label, None, None)]
+        if self._running:
+            self.kill()
+        else:
+            self._start_next()
+
+    def enqueue_program(
+        self,
+        program: str,
+        args: list[str],
+        label: str,
+        *,
+        cwd: str | Path | None = None,
+    ) -> None:
+        self._queue.append((args, label, program, cwd))
+        if not self._running:
+            self._start_next()
+
+    def run_program(
+        self,
+        program: str,
+        args: list[str],
+        label: str,
+        *,
+        cwd: str | Path | None = None,
+    ) -> None:
+        self._queue = [(args, label, program, cwd)]
         if self._running:
             self.kill()
         else:
@@ -50,14 +77,18 @@ class ProcessController(QObject):
             self._running = False
             self.status_changed.emit("Готово")
             return
-        args, label = self._queue.pop(0)
+        args, label, program, cwd = self._queue.pop(0)
         self._current_label = label
         self._last_lines = []
         self._running = True
         self.started.emit(label)
         self.status_changed.emit(f"Выполняется: {label}…")
-        self._process.setWorkingDirectory(str(REPO_ROOT))
-        self._process.start(sys.executable, args)
+        work_dir = str(cwd) if cwd else str(REPO_ROOT)
+        self._process.setWorkingDirectory(work_dir)
+        if program:
+            self._process.start(program, args)
+        else:
+            self._process.start(sys.executable, args)
 
     def _on_stdout(self) -> None:
         data = bytes(self._process.readAllStandardOutput()).decode("utf-8", errors="replace")

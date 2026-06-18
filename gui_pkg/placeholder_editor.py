@@ -20,12 +20,11 @@ from source_resolve import (  # noqa: E402
     elements_by_key,
     find_item_quantity,
     is_placeholder_ru,
-    is_real_translation,
     is_usable_library_ru,
     load_locale_roots,
     lookup_library_ru_for_apply,
     module_values_en_coverage,
-    sync_ru_to_variant_keys,
+    apply_ru_to_track_maps,
 )
 
 Track = Literal["en", "zh"]
@@ -396,11 +395,9 @@ def apply_placeholder_translations(
         row = by_row.get(row_id)
         if row is None or not row.variants:
             continue
-        ru_s = (ru_text or "").strip()
-        if not is_real_translation(row.source, ru_s):
-            continue
-        dirty = sync_ru_to_variant_keys(track_maps, row.variants, ru_s)
-        dict_keys += len(dirty)
+        dirty = apply_ru_to_track_maps(track_maps, row.variants, ru_text)
+        if dirty:
+            dict_keys += 1
         dirty_tracks |= dirty
 
     for track in sorted(dirty_tracks):
